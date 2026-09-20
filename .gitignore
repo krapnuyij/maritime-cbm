@@ -1,0 +1,25 @@
+.env
+.venv/
+.DS_Store
+
+# Local AI assistant instructions
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+
+data/raw/
+data/processed/
+artifacts/
+checkpoints/
+mlruns/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
