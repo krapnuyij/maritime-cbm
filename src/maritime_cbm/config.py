@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RANDOM_SEED = 42
 DEFAULT_RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw" / "uci_cbm"
+DEFAULT_EDA_REPORT_DIR = PROJECT_ROOT / "reports" / "eda"
 
 
 class ConfigurationError(ValueError):

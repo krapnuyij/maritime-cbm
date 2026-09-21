@@ -15,8 +15,8 @@
 
 ## 현재 상태
 
-M0 프로젝트 기반 구성과 M1-A 데이터 로드·검증을 완료했다. 실제 UCI 원본 데이터의
-구조와 격자 검증도 완료했으며, 데이터 분할과 모델 실험은 아직 수행하지 않았다.
+M0 프로젝트 기반 구성과 M1-A/B 데이터 로드·검증, 특성 선택, EDA 및 데이터 분할을
+완료했다. M1의 Linux CI와 M2 모델 학습·성능 평가는 아직 수행하지 않았다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -39,6 +39,13 @@ uv sync
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest -q
+```
+
+EDA 그림까지 재생성하려면 전용 의존성 그룹을 추가로 설치한다.
+
+```bash
+uv sync --group eda
+uv run --group eda python -m maritime_cbm.data.eda
 ```
 
 ## 데이터 준비와 검증
@@ -72,6 +79,7 @@ uv run python -m maritime_cbm.data.validation /path/to/uci_cbm
 │   ├── raw/
 │   └── processed/
 ├── docs/                  # 명세, 데이터 및 실험 문서
+├── reports/eda/           # 재현 가능한 집계 EDA 표와 핵심 그림
 ├── src/maritime_cbm/      # 애플리케이션 패키지
 ├── tests/                 # 자동화 테스트
 ├── pyproject.toml         # 프로젝트 및 도구 설정
