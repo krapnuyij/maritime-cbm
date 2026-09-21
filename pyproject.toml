@@ -10,28 +10,37 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = []
+dependencies = [
+    "numpy>=2.5.3",
+    "pandas>=3.0.6",
+]
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
     "ruff>=0.9",
 ]
+eda = [
+    "matplotlib>=3.11.2",
+]
 
 [tool.pytest.ini_options]
 addopts = "-ra"
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+    "integration: requires local raw UCI release files",
+]
 
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
 target-version = "py313"
 extend-exclude = [
-    "artifacts",
-    "checkpoints",
-    "data",
-    "mlruns",
+    "/artifacts",
+    "/checkpoints",
+    "/data",
+    "/mlruns",
 ]
 
 [tool.ruff.lint]
