@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M1. 데이터 파이프라인
+M2. 기준 모델
 
 ## 완료
 
@@ -19,6 +19,8 @@ M1. 데이터 파이프라인
 - 비교용 행 랜덤, 기본 상태 그룹, 압축기·터빈 연속 열화 구간 holdout 분할 구현
 - 네 분할 시나리오의 12개 행 인덱스 SHA-256을 실제 원본으로 생성하고 통합 테스트에 고정
 - 전체 데이터 집계 통계, pooled·속도 조건부 상관 및 속도 간 분산 비율 CSV와 핵심 EDA 그림 3개 생성
+- 합성 상태 격자의 분할 해시 회귀 테스트와 Ubuntu 24.04 Linux CI 구성
+- 첫 GitHub Actions Linux/X64 실행에서 lock·Ruff·포맷·pytest 검증 통과
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -28,7 +30,7 @@ M1. 데이터 파이프라인
 
 ## 진행 중
 
-- M1 Linux CI 설계 준비
+- M2 기준 모델 구현 계획 수립 준비
 
 ## 진행 관리 원칙
 
@@ -40,10 +42,10 @@ M1. 데이터 파이프라인
 
 ## 다음 작업
 
-1. PR #1 검토 및 merge 결정
-2. Linux CI workflow 계획 수립과 승인
-3. workflow 구현 후 Ubuntu 환경에서 Ruff·pytest·uv lock 검증
-4. M1 완료 처리 후 M2 기준 모델 계획 수립
+1. M2 기준 모델 구현 계획 수립 및 승인
+2. 동일한 분할과 평가 지표를 사용하는 학습·평가 파이프라인 구현
+3. 해석 가능한 scikit-learn 기준 모델 비교와 오류 분석
+4. 최종 기준 모델 선정 후 `docs/MODEL_CARD.md` 생성
 
 ## 확정된 결정
 
@@ -85,6 +87,7 @@ M1. 데이터 파이프라인
 - 분할은 NumPy `default_rng`와 중앙 seed를 사용하며 분할별로 난수 생성기를 독립 생성한다.
 - 분할 인덱스는 little-endian int64 바이트의 SHA-256으로 고정한다.
 - EDA 그림은 `eda` 의존성 그룹의 Matplotlib Agg 백엔드로 생성하며, 집계 CSV와 핵심 PNG만 커밋 대상으로 한다.
+- Linux CI는 원본 데이터를 다운로드하지 않고 합성 격자로 문서화된 분할 해시 12개를 검증한다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
 - Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
@@ -101,6 +104,11 @@ M1. 데이터 파이프라인
 
 ## 마지막 검증
 
+- 2026-09-21: GitHub Actions CI 실행 #1(`5948fd3`) 성공, Ubuntu 24.04.5 LTS·Linux/X64(`x86_64`)·Runner Image `20260907.300.1`
+- 2026-09-21: CI에서 uv 0.12.17·Python 3.13.15로 lock·Ruff·포맷 검사 통과, 39개 테스트 성공·원본 데이터 통합 테스트 3개 skip
+- 2026-09-21: Linux/aarch64 컨테이너(`5948fd3`, Debian 13, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 42개 테스트와 Ruff·포맷 검사 통과
+- 2026-09-21: Linux/aarch64 사전 검증(`main@ada158e`, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 41개 테스트와 Ruff·포맷 검사 통과
+- 2026-09-21: macOS에서 `uv lock --check`, Ruff·포맷 검사 및 원본 데이터 포함 42개 테스트 통과
 - 2026-09-21: `ruff check .` 통과
 - 2026-09-21: `ruff format --check .` 통과, 24개 파일 형식 확인
 - 2026-09-21: `pytest -q` 통과, 실제 원본·분할 해시·EDA 관찰 통합 테스트 포함 41개 테스트 성공

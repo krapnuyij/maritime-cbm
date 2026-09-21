@@ -11,6 +11,7 @@ from maritime_cbm.data.splitting import (
     DatasetSplit,
     SplitDefinitionError,
     build_dataset_splits,
+    compute_split_hashes,
     create_compressor_holdout_split,
     create_random_row_split,
     create_state_group_split,
@@ -18,6 +19,31 @@ from maritime_cbm.data.splitting import (
     diagnose_group_neighbors,
     hash_row_indices,
 )
+
+# Rebaseline these together with the official-release hashes after any NumPy or
+# split-definition change. They intentionally duplicate the documented release hashes.
+EXPECTED_SYNTHETIC_SPLIT_HASHES = {
+    "random_row": {
+        "train": "830e5c6ad4ef9a309336e40de92c90495dc11f7fa49a08d33065270cf077fd50",
+        "validation": "63ba78c446800528028b5552030d8179c5b60767be1d87dc497811b8d7a49b7a",
+        "test": "fc17cf1842355c9daa35eac1e7c0b3cbf5e7154f2c0091dbce1683ae8e46648b",
+    },
+    "state_group": {
+        "train": "158edd80d6f67c91405d34d20a7657fb29557536893e996758bf6e884e0a0917",
+        "validation": "84ac9e1059e569e4085825061a4c549d3dda1042d5a608fe89dcc1e7ca01d997",
+        "test": "88bfc5b3cf14be31f862936ecfc9f7fe3663a8bd953a95270feb0934392ccbfe",
+    },
+    "compressor_holdout": {
+        "train": "a0af865d4f671fe7ed56e77b3da3547646451a9027ad714f5e4a8c578c5c326a",
+        "validation": "b40891ddb6b4e822958517ffb7f90265ddffc752c52d8162e34584143644848d",
+        "test": "e180abb2ca8bcefd29840d4a221966a6a4220ccf8bd66fc1184a1df96ba3a6c2",
+    },
+    "turbine_holdout": {
+        "train": "a074708beb2ec894011265993fd3077f36ef686321d9badfce6fac516a0fb79e",
+        "validation": "dc49fecf576259f83e10fbeca6cdf0fcd48f758a21965cd4d38602860be46c55",
+        "test": "cd1e52f7efdd68ca4ec4f3f9d818315bc1fa816aa1d9a44854b2fd809d87a180",
+    },
+}
 
 
 @pytest.fixture(scope="module")
@@ -140,3 +166,18 @@ def test_build_splits_and_neighbor_diagnostics(release_targets: pd.DataFrame) ->
     assert diagnostics.test_group_count == 199
     assert diagnostics.test_groups_with_eight_neighbor == 199
     assert 0 < diagnostics.test_groups_with_four_neighbor <= 199
+
+
+def test_canonical_synthetic_grid_reproduces_documented_split_hashes(
+    release_targets: pd.DataFrame,
+) -> None:
+    """Reproduce release hashes from its kMc-major, then kMt, nine-row state blocks.
+
+    The official-release integration hashes indirectly confirm that its state-block
+    placement matches this synthetic grid. Row order for v within a state group does
+    not affect these hashes. A different state-block placement would invalidate the
+    correspondence between the synthetic and official-release hashes.
+    """
+    actual_hashes = compute_split_hashes(build_dataset_splits(release_targets, seed=42))
+
+    assert actual_hashes == EXPECTED_SYNTHETIC_SPLIT_HASHES
