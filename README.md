@@ -1,5 +1,7 @@
 # Maritime CBM
 
+[![CI](https://github.com/krapnuyij/maritime-cbm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/krapnuyij/maritime-cbm/actions/workflows/ci.yml?query=branch%3Amain)
+
 시뮬레이션 기반 다변량 선박 가스터빈 센서 데이터에서 압축기·터빈 열화 상태를
 추정하고, 제한된 조건에서 경보 정책의 가능성을 검토하는 PoC이다.
 
@@ -16,7 +18,8 @@
 ## 현재 상태
 
 M0 프로젝트 기반 구성과 M1-A/B 데이터 로드·검증, 특성 선택, EDA 및 데이터 분할을
-완료했다. M1의 Linux CI와 M2 모델 학습·성능 평가는 아직 수행하지 않았다.
+완료했다. M1 Linux CI는 구성했으며 최초 Ubuntu 검증 전이다. M2 모델 학습·성능 평가는
+아직 수행하지 않았다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -40,6 +43,17 @@ uv run ruff check .
 uv run ruff format --check .
 uv run pytest -q
 ```
+
+## CI 검증 범위
+
+GitHub Actions는 Ubuntu에서 lock 파일, Ruff, 포맷과 pytest를 검증하도록 구성했다. 원본
+UCI 파일은 라이선스 표기 충돌과 재배포 방침 때문에 CI에서 내려받지 않는다. 따라서 원본
+검증, 원본 기반 분할 해시와 EDA 관찰 통합 테스트 3개는 CI에서 skip된다.
+
+원본에서 확인한 `kMc` 우선·`kMt` 차순의 9행 상태 그룹 블록 배치를 재현한 합성 격자로,
+문서화된 분할 해시 12개를 Ubuntu CI에서 검증하도록 구성했다. 실제 분할 해시 검증은 합성
+격자가 원본과 같은 상태 그룹 블록 배치를 갖는다는 조건 아래에서만 대체한다. 원본 파일
+로딩과 EDA 관찰 수치는 원본이 있는 별도 환경에서 검증한다.
 
 EDA 그림까지 재생성하려면 전용 의존성 그룹을 추가로 설치한다.
 

@@ -28,7 +28,7 @@ M1. 데이터 파이프라인
 
 ## 진행 중
 
-- M1 Linux CI 설계 준비
+- M1 Linux CI 구현 및 Ubuntu 검증
 
 ## 진행 관리 원칙
 
@@ -40,9 +40,9 @@ M1. 데이터 파이프라인
 
 ## 다음 작업
 
-1. PR #1 검토 및 merge 결정
-2. Linux CI workflow 계획 수립과 승인
-3. workflow 구현 후 Ubuntu 환경에서 Ruff·pytest·uv lock 검증
+1. CI PR 생성 및 첫 Ubuntu 실행 확인
+2. 실행 환경과 pass·skip 결과 문서화
+3. 후속 문서 커밋의 두 번째 CI 성공 확인
 4. M1 완료 처리 후 M2 기준 모델 계획 수립
 
 ## 확정된 결정
@@ -85,6 +85,7 @@ M1. 데이터 파이프라인
 - 분할은 NumPy `default_rng`와 중앙 seed를 사용하며 분할별로 난수 생성기를 독립 생성한다.
 - 분할 인덱스는 little-endian int64 바이트의 SHA-256으로 고정한다.
 - EDA 그림은 `eda` 의존성 그룹의 Matplotlib Agg 백엔드로 생성하며, 집계 CSV와 핵심 PNG만 커밋 대상으로 한다.
+- Linux CI는 원본 데이터를 다운로드하지 않고 합성 격자로 문서화된 분할 해시 12개를 검증한다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
 - Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
