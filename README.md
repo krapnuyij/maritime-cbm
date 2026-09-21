@@ -8,7 +8,7 @@
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 데이터 사용
 - 정상상태 센서값으로부터 `kMc`, `kMt` 열화 상태 계수를 추정하는 다중 출력 회귀
 - 회귀 예측값을 이용한 제한적 경보 정책 검토
-- FastAPI 추론 API와 Docker 실행 환경 제공
+- M5에서 FastAPI 추론 API와 Docker 실행 환경 제공 예정
 
 이 데이터에는 타임스탬프와 실제 고장 라벨이 없다. 따라서 이 프로젝트를 시계열 예측,
 미래 고장 예측, 잔여수명 예측 또는 실제 선박 고장진단으로 해석하지 않는다.

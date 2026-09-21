@@ -31,16 +31,20 @@ M1. 데이터 파이프라인
 
 ## 다음 작업
 
-1. 공식 UCI 원본 데이터를 `data/raw/uci_cbm/`에 내려받고 SHA-256 기록
-2. 행·열 수, 변수 순서, 결측값 및 공식 격자 구조 검증
-3. 데이터 로더와 입력·정답 분리 구현
-4. EDA 후 그룹 분할과 holdout 강건성 평가의 구체적인 방식 결정
+1. 중앙 config와 표준 `logging` 기반 구성
+2. 공식 UCI 원본 데이터를 `data/raw/uci_cbm/`에 내려받고 SHA-256 기록
+3. 행·열 수, 변수 순서, 결측값 및 공식 격자 구조 검증
+4. 데이터 로더와 입력·정답 분리 구현
+5. EDA 후 그룹 분할과 holdout 강건성 평가의 구체적인 방식 결정
 
 ## 확정된 결정
 
 - 프로젝트명: Maritime CBM
 - Python 버전: 3.13
 - 패키지 관리 방식: uv와 `uv.lock`
+- M1에서 `src/maritime_cbm/config.py`를 생성해 random seed 기본값 42와 데이터 경로를 중앙 관리한다.
+- 로깅은 Python 표준 `logging`을 사용하고 별도 로깅 라이브러리는 추가하지 않는다.
+- 외부 설정 파일은 실제 필요가 확인될 때 도입하며 M1 시작 시점에는 추가하지 않는다.
 - 프로젝트 코드 라이선스: MIT License
 - UCI 데이터셋 라이선스: CC BY 4.0
 - 사용 데이터: UCI `Condition Based Maintenance of Naval Propulsion Plants`
