@@ -28,7 +28,7 @@ M1. 데이터 파이프라인
 
 ## 진행 중
 
-- M1-B 구현 검증 및 변경 검토
+- M1 Linux CI 설계 준비
 
 ## 진행 관리 원칙
 
@@ -40,9 +40,10 @@ M1. 데이터 파이프라인
 
 ## 다음 작업
 
-1. M1-B 변경 검토와 커밋 여부 결정
-2. Linux CI에서 Ruff와 pytest를 실행하는 workflow 설계
-3. M2 기준 모델과 전처리 파이프라인 구현 계획 수립
+1. PR #1 검토 및 merge 결정
+2. Linux CI workflow 계획 수립과 승인
+3. workflow 구현 후 Ubuntu 환경에서 Ruff·pytest·uv lock 검증
+4. M1 완료 처리 후 M2 기준 모델 계획 수립
 
 ## 확정된 결정
 
