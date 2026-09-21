@@ -15,8 +15,8 @@
 
 ## 현재 상태
 
-M0 프로젝트 기반 구성을 완료하고 M1 데이터 파이프라인을 준비하고 있다. 실험 결과와
-성능 지표는 아직 없다.
+M0 프로젝트 기반 구성과 M1-A 데이터 로드·검증을 완료했다. 실제 UCI 원본 데이터의
+구조와 격자 검증도 완료했으며, 데이터 분할과 모델 실험은 아직 수행하지 않았다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -39,6 +39,29 @@ uv sync
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest -q
+```
+
+## 데이터 준비와 검증
+
+원본 데이터는 [데이터셋 안내](docs/DATASET.md)에 따라 직접 내려받아 다음 위치에 둔다.
+
+```text
+data/raw/uci_cbm/
+├── data.txt
+├── Features.txt
+└── README.txt
+```
+
+파일을 배치한 뒤 공식 구조와 격자를 검증한다.
+
+```bash
+uv run python -m maritime_cbm.data.validation
+```
+
+다른 위치를 사용한다면 디렉터리를 위치 인자로 전달한다.
+
+```bash
+uv run python -m maritime_cbm.data.validation /path/to/uci_cbm
 ```
 
 ## 디렉터리 구조
