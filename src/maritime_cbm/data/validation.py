@@ -1,11 +1,11 @@
 """Validation entry point for the official UCI naval propulsion release."""
 
 import argparse
-from dataclasses import asdict, dataclass
 import json
 import logging
-from pathlib import Path
 from collections.abc import Sequence
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -143,12 +143,8 @@ def validate_dataframe(frame: pd.DataFrame) -> DatasetObservations:
 
     normalized_grid = frame.loc[:, ["v", "kMc", "kMt"]].round(GRID_ROUND_DECIMALS)
     combination_counts = normalized_grid.value_counts(dropna=False)
-    if len(combination_counts) != EXPECTED_GRID_SIZE or not bool(
-        combination_counts.eq(1).all()
-    ):
-        errors.append(
-            "Expected exactly one row for every rounded (v, kMc, kMt) grid combination"
-        )
+    if len(combination_counts) != EXPECTED_GRID_SIZE or not bool(combination_counts.eq(1).all()):
+        errors.append("Expected exactly one row for every rounded (v, kMc, kMt) grid combination")
 
     if errors:
         raise DatasetValidationError(errors)

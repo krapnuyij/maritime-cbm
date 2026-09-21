@@ -27,8 +27,7 @@ def valid_frame() -> pd.DataFrame:
     )
     row_index = np.arange(len(grid), dtype=np.float64)
     values = {
-        column: row_index + column_index / 100
-        for column_index, column in enumerate(ALL_COLUMNS)
+        column: row_index + column_index / 100 for column_index, column in enumerate(ALL_COLUMNS)
     }
     values["lp"] = grid[:, 0] / 3
     values["v"] = grid[:, 0]
@@ -79,9 +78,7 @@ def test_validate_dataframe_rejects_duplicate_grid_combination(
     valid_frame: pd.DataFrame,
 ) -> None:
     invalid_frame = valid_frame.copy()
-    invalid_frame.loc[1, ["v", "kMc", "kMt"]] = invalid_frame.loc[
-        0, ["v", "kMc", "kMt"]
-    ].to_numpy()
+    invalid_frame.loc[1, ["v", "kMc", "kMt"]] = invalid_frame.loc[0, ["v", "kMc", "kMt"]].to_numpy()
 
     with pytest.raises(DatasetValidationError, match="exactly one row"):
         validate_dataframe(invalid_frame)
@@ -115,9 +112,7 @@ def test_validate_dataframe_rejects_column_order(valid_frame: pd.DataFrame) -> N
         validate_dataframe(valid_frame.loc[:, reordered_columns])
 
 
-def test_validate_release_reports_file_metadata(
-    tmp_path: Path, valid_frame: pd.DataFrame
-) -> None:
+def test_validate_release_reports_file_metadata(tmp_path: Path, valid_frame: pd.DataFrame) -> None:
     np.savetxt(tmp_path / "data.txt", valid_frame.to_numpy())
     (tmp_path / "Features.txt").write_text("feature descriptions", encoding="utf-8")
     (tmp_path / "README.txt").write_text("release documentation", encoding="utf-8")

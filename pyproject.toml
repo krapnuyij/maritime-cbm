@@ -34,10 +34,10 @@ line-length = 100
 src = ["src", "tests"]
 target-version = "py313"
 extend-exclude = [
-    "artifacts",
-    "checkpoints",
-    "data",
-    "mlruns",
+    "/artifacts",
+    "/checkpoints",
+    "/data",
+    "/mlruns",
 ]
 
 [tool.ruff.lint]
