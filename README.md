@@ -17,8 +17,8 @@
 
 ## 현재 상태
 
-M0 프로젝트 기반 구성, M1 데이터 파이프라인과 M2 scikit-learn 기준 모델 선택·평가를
-완료했다. M3 PyTorch 모델은 아직 구현하지 않았다.
+M0 프로젝트 기반 구성, M1 데이터 파이프라인, M2 scikit-learn 기준 모델과 M3 PyTorch
+비교 모델의 선택·평가를 완료했다. 다음 단계는 회귀 예측값 기반 M4 경보 정책이다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -26,23 +26,24 @@ M0 프로젝트 기반 구성, M1 데이터 파이프라인과 M2 scikit-learn �
 - [현재 진행 상황](docs/CURRENT_STAGE.md)
 - [데이터셋 안내](docs/DATASET.md)
 - [실험 기록](docs/EXPERIMENT_LOG.md)
-- [기준 모델 카드](docs/MODEL_CARD.md)
+- [모델 카드](docs/MODEL_CARD.md)
 
 ## 개발 환경
 
 - Python 3.13
 - uv
 - scikit-learn
+- PyTorch
 - Ruff
 - pytest
 
 환경을 구성하고 기본 검증을 실행한다.
 
 ```bash
-uv sync
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest -q
+uv sync --group eda --group modeling
+uv run --group eda --group modeling ruff check .
+uv run --group eda --group modeling ruff format --check .
+uv run --group eda --group modeling pytest -q
 ```
 
 ## CI 검증 범위
@@ -79,6 +80,22 @@ Forest다. 상태 그룹 test의 R²는 `kMc` 0.9967, `kMt` 0.9928이지만, 학
 열화 상태에 대한 보장으로 해석하지 않는다. 세부 결과는 [모델 카드](docs/MODEL_CARD.md)와
 [모델링 리포트](reports/modeling/)에 있다.
 
+## PyTorch 비교 모델 재현
+
+M3도 validation 전용 선택과 고정 checkpoint test 평가를 분리한다. 공식 결과는 CPU에서
+생성하며 MPS는 선택 실행 경로로만 제공한다.
+
+```bash
+uv sync --locked --group eda --group modeling
+uv run --locked --group eda --group modeling python -m maritime_cbm.modeling.torch_benchmark select --device cpu
+uv run --locked --group eda --group modeling python -m maritime_cbm.modeling.torch_benchmark evaluate --device cpu
+```
+
+선택된 모델은 속도 중심화 선형 잔차 MLP다. 상태 그룹과 심한 열화 방향 holdout 모두 M2
+Random Forest보다 오차가 감소했지만 holdout의 건강 방향 bias는 남아 있다. M2 결과를 본 뒤
+구조를 설계했으므로 완전히 미관측인 독립 test 성능으로 주장하지 않는다. 상세 결과는
+[M3 리포트](reports/modeling/m3/)와 [모델 카드](docs/MODEL_CARD.md)에 있다.
+
 ## 데이터 준비와 검증
 
 원본 데이터는 [데이터셋 안내](docs/DATASET.md)에 따라 직접 내려받아 다음 위치에 둔다.
@@ -112,7 +129,7 @@ uv run python -m maritime_cbm.data.validation /path/to/uci_cbm
 ├── artifacts/modeling/    # 로컬 모델·행 단위 예측, Git 제외
 ├── docs/                  # 명세, 데이터 및 실험 문서
 ├── reports/eda/           # 재현 가능한 집계 EDA 표와 핵심 그림
-├── reports/modeling/      # 기준 모델 집계 지표와 핵심 그림
+├── reports/modeling/      # M2·M3 집계 지표와 핵심 그림
 ├── src/maritime_cbm/      # 애플리케이션 패키지
 ├── tests/                 # 자동화 테스트
 ├── pyproject.toml         # 프로젝트 및 도구 설정

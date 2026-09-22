@@ -38,7 +38,7 @@ jobs:
         run: uv lock --check
 
       - name: Sync dependencies
-        run: uv sync --locked --group eda
+        run: uv sync --locked --group eda --group modeling
 
       - name: Show environment
         run: |
@@ -47,13 +47,14 @@ jobs:
           echo "${PRETTY_NAME}"
           uname -srm
           uv --version
-          uv run --locked --group eda python --version
+          uv run --locked --group eda --group modeling python --version
+          uv run --locked --group eda --group modeling python -c "import torch; print(torch.__version__)"
 
       - name: Lint
-        run: uv run --locked --group eda ruff check .
+        run: uv run --locked --group eda --group modeling ruff check .
 
       - name: Check formatting
-        run: uv run --locked --group eda ruff format --check .
+        run: uv run --locked --group eda --group modeling ruff format --check .
 
       - name: Test
-        run: uv run --locked --group eda pytest -q
+        run: uv run --locked --group eda --group modeling pytest -q

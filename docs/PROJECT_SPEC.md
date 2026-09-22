@@ -105,10 +105,24 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 
 ### M3. PyTorch 모델
 
-- 소형 MLP 기반 다중 출력 회귀
-- 기준 모델과 동일 조건 비교
-- 학습 곡선 및 과적합 점검
-- MPS 사용은 선택 사항이며, 사용하는 경우 CPU fallback 제공
+- 소형 MLP와 선형 잔차 경로를 가진 신경망을 M2와 동일한 입력·분할·지표로 비교
+- Random Forest의 격자 내부 성능과 심한 열화 방향 외삽 포화 한계를 보완할 가능성 검토
+- 원시 입력 MLP, 속도 중심화 MLP, 속도 중심화 선형 잔차 MLP의 세 구조 비교
+- 각 구조에서 `(64, 32)`, `(128, 64)` 은닉층을 사용한 총 6개 후보 평가
+- 모든 후보는 ReLU 은닉층과 선형 출력층을 사용하고 예측값을 공식 계수 범위로 clipping하지 않음
+- 속도 중심화 후보는 `v`를 유지하고 나머지 11개 센서만 train의 속도별 평균으로 중심화한 뒤 12개 입력을 표준화
+- 입력 scaler와 target scaler는 각 분할의 train에만 fit
+- AdamW, 표준화 target MSE, batch 256, 최대 500 epoch와 validation NRMSE 기반 early stopping 사용
+- 기본 seed 42에서 파생한 42·43·44 세 seed의 상태 그룹 validation 평균 NRMSE로 신경망 후보 선택
+- 동점은 최악 대상 평균 NRMSE, trainable parameter 수, 사전 정의한 구조 순서와 candidate ID로 결정
+- 행 랜덤 validation은 고정 후보의 early stopping에만 사용하고 압축기·터빈 holdout validation은
+  early stopping과 외삽 진단에 사용하되, 세 validation 모두 후보 선택에는 사용하지 않음
+- 선택 구조와 seed 42를 고정한 뒤 네 시나리오 test를 한 번 평가하고 결과 확인 후 재조정하지 않음
+- 상태 그룹·압축기·터빈은 selection 단계의 seed 42 checkpoint를 재사용하고 행 랜덤만 최종 평가 단계에서 학습
+- CPU와 `float32`를 공식 실험 기준으로 사용하고 MPS는 선택 실행 경로와 CPU fallback만 제공
+- 학습 곡선, 과적합, 성능·bias·외삽 범위, 학습·추론 시간, parameter 수와 artifact 크기 비교
+- checkpoint와 행 단위 예측은 `artifacts/modeling/m3/`, 집계 지표와 핵심 그림은 `reports/modeling/m3/`에 저장
+- M2 holdout 결과를 본 뒤 구조를 설계했으므로 M3 holdout을 완전히 미관측인 독립 test가 아닌 고정 벤치마크의 탐색적 비교로 해석
 - 비교 결과와 모델별 한계를 `docs/MODEL_CARD.md`에 갱신
 
 ### M4. 경보 정책

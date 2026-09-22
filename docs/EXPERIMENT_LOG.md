@@ -19,6 +19,8 @@
 |---|---|---|---|---|---|---|---|
 | EXP-20260922-001 | 2026-09-22 | validation 기반 기준 모델 선택 | `DATASET.md@129ae3c` | 상태 그룹·두 holdout validation | 17개 scikit-learn 후보 | 완료 | [상세](#exp-20260922-001--validation-기반-기준-모델-선택) |
 | EXP-20260922-002 | 2026-09-22 | 고정 기준 모델 최종 평가 | `DATASET.md@129ae3c` | 네 시나리오 validation·test | Random Forest | 완료 | [상세](#exp-20260922-002--고정-기준-모델-최종-평가) |
+| EXP-20260922-003 | 2026-09-22 | validation 기반 M3 모델 선택 | `DATASET.md@ef70ee1` | 상태 그룹·두 holdout validation | 6개 PyTorch 후보 × 3 seed | 완료 | [상세](#exp-20260922-003--validation-기반-m3-모델-선택) |
+| EXP-20260922-004 | 2026-09-22 | 고정 M3 모델 최종 평가 | `DATASET.md@ef70ee1` | 네 시나리오 validation·test | 선형 잔차 MLP | 완료 | [상세](#exp-20260922-004--고정-m3-모델-최종-평가) |
 
 ## EXP-20260922-001 — validation 기반 기준 모델 선택
 
@@ -175,6 +177,93 @@
 - 결과 요약: 상태 그룹 test에서는 높은 정확도를 보였지만 심한 열화 방향 외삽에는 실패
 - 한계: 실제 고장·시간 진행을 예측하지 않으며 holdout에서 더 건강한 상태로 과대 추정
 - 다음 결정: M3 모델도 동일한 선택·평가 규칙으로 비교하고 M4 경보 정책에서 holdout bias를 명시적으로 검토
+
+## EXP-20260922-003 — validation 기반 M3 모델 선택
+
+### 실행 정보
+
+- 상태: 완료
+- 실행 일시: 2026-09-22 15:34 KST
+- Git commit: `ef70ee1`
+- 작업 트리 상태: 실행 시작 시 clean
+- 관련 미커밋 파일: 해당 없음
+- 실행 명령: `uv run --locked --group eda --group modeling python -m maritime_cbm.modeling.torch_benchmark select --device cpu`
+- 실험 목적: test를 사용하지 않고 세 seed 상태 그룹 validation NRMSE로 M3 비교 모델 선택
+
+### 데이터·분할
+
+- 데이터셋: UCI `Condition Based Maintenance of Naval Propulsion Plants`, 11,934행·18열
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `ef70ee1`
+- 입력·대상: 확정 12개 입력, `kMc`, `kMt`
+- 분할: 상태 그룹 validation으로 선택, 두 holdout validation은 early stopping과 외삽 진단
+- random seed: 42·43·44
+- 전처리: 후보별 원시 입력 또는 train-only 속도 중심화, train-only feature·target 표준화
+
+### 설정과 실행 환경
+
+- Python 3.13.13, NumPy 2.5.3, pandas 3.0.6, scikit-learn 1.9.1, PyTorch 2.14.0
+- 운영체제와 장치: macOS 26.5.1 arm64, CPU
+- 학습: float32, AdamW, learning rate 0.001, weight decay 0.0001, batch 256, 최대 500 epoch, patience 40
+
+### 결과
+
+| 후보 | 상태 그룹 평균 NRMSE | 최악 대상 NRMSE | 선택 |
+|---|---:|---:|---|
+| 선형 잔차 MLP, speed-centered, 128·64 | 0.003762 | 0.004659 | 예 |
+| MLP, speed-centered, 128·64 | 0.003969 | 0.004987 | 아니오 |
+| 선형 잔차 MLP, speed-centered, 64·32 | 0.004152 | 0.004974 | 아니오 |
+| MLP, speed-centered, 64·32 | 0.004260 | 0.005137 | 아니오 |
+
+- 선택 모델 대상별 세 seed 평균 NRMSE: `kMc` 0.002866, `kMt` 0.004659
+- 실행 시간: 54회 학습 합계 327.883961초
+- 산출물: `artifacts/modeling/m3/selection.json`, seed 42 checkpoint 3개, `reports/modeling/m3/` 선택 CSV 3개
+- 결론: `linear_residual_mlp_speed_centered_hidden_128_64`를 고정 최종 후보로 선택
+
+## EXP-20260922-004 — 고정 M3 모델 최종 평가
+
+### 실행 정보
+
+- 상태: 완료
+- 실행 일시: 2026-09-22 15:35 KST
+- Git commit: `ef70ee1`
+- 작업 트리 상태: dirty
+- 관련 미커밋 파일: selection 단계가 생성한 `reports/modeling/m3/` CSV 3개
+- 실행 명령: `uv run --locked --group eda --group modeling python -m maritime_cbm.modeling.torch_benchmark evaluate --device cpu`
+- 실험 목적: 고정된 M3 checkpoint를 네 test 시나리오에서 한 번 평가하고 M2와 비교
+
+### 절차와 환경
+
+- 데이터·분할: `docs/DATASET.md`의 고정된 네 시나리오와 SHA-256 12개
+- checkpoint: 상태 그룹·압축기·터빈은 selection seed 42 checkpoint 재사용, 행 랜덤만 신규 fit
+- manifest 검증: 원본·분할 해시, 후보 grid, 학습 설정, 런타임 버전과 PyTorch 버전 일치
+- 실행 환경: Python 3.13.13, PyTorch 2.14.0, macOS 26.5.1 arm64, CPU
+- clipping: 적용하지 않음
+
+### 결과
+
+| 시나리오 | 대상 | MAE | RMSE | R² | NRMSE |
+|---|---|---:|---:|---:|---:|
+| 행 랜덤 | `kMc` | 0.000107 | 0.000158 | 0.999882 | 0.003153 |
+| 행 랜덤 | `kMt` | 0.000081 | 0.000117 | 0.999757 | 0.004661 |
+| 상태 그룹 | `kMc` | 0.000100 | 0.000140 | 0.999903 | 0.002793 |
+| 상태 그룹 | `kMt` | 0.000085 | 0.000126 | 0.999678 | 0.005022 |
+| 압축기 holdout | `kMc` | 0.000811 | 0.001029 | 0.470539 | 0.020581 |
+| 압축기 holdout | `kMt` | 0.000441 | 0.000551 | 0.994602 | 0.022042 |
+| 터빈 holdout | `kMc` | 0.001429 | 0.001763 | 0.985648 | 0.035268 |
+| 터빈 holdout | `kMt` | 0.001237 | 0.001385 | 0.040868 | 0.055401 |
+
+- M2 대비 NRMSE 감소: 상태 그룹 `kMc` 82.8%, `kMt` 78.8%, 압축기 holdout `kMc` 90.2%, 터빈 holdout `kMt` 84.9%
+- 주요 한계: holdout bias가 압축기 `kMc` +0.000695, 터빈 `kMt` +0.000996으로 건강 방향에 남아 있음
+- 실행 시간: 네 시나리오 학습 기록 합계 17.831090초, validation·test prediction 합계 0.005996초
+- checkpoint: `artifacts/modeling/m3/checkpoints/state_group_seed_42.pt`, SHA-256 `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`
+- checkpoint 재로드 예측과 저장 CSV 최대 절대 차이: `1.11e-16`
+- 지표·그림: `reports/modeling/m3/`, 행 단위 예측과 evaluation manifest는 `artifacts/modeling/m3/`
+- 결론: M3는 M2의 격자 내부 오차와 tree 외삽 포화를 크게 줄였으나 실제 고장진단 또는 미관측 조건 보장을 의미하지 않음
+- 다음 결정: M4에서 M3 자동 교체 여부를 별도로 판단하고, 경보 정책에 남은 건강 방향 bias를 반영
+
+M2 holdout 결과를 본 뒤 M3 구조를 설계했으므로 두 holdout 비교는 완전히 미관측인 독립
+test가 아니라 사전에 고정한 벤치마크의 탐색적 비교다. M3는 selection checkpoint를 최종
+평가에 재사용했고 M2는 네 시나리오를 평가 단계에서 다시 학습했다.
 
 ## 실험별 기록 양식
 

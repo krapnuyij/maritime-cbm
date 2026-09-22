@@ -10,6 +10,8 @@ DEFAULT_RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw" / "uci_cbm"
 DEFAULT_EDA_REPORT_DIR = PROJECT_ROOT / "reports" / "eda"
 DEFAULT_MODEL_ARTIFACT_DIR = PROJECT_ROOT / "artifacts" / "modeling"
 DEFAULT_MODEL_REPORT_DIR = PROJECT_ROOT / "reports" / "modeling"
+DEFAULT_M3_MODEL_ARTIFACT_DIR = DEFAULT_MODEL_ARTIFACT_DIR / "m3"
+DEFAULT_M3_MODEL_REPORT_DIR = DEFAULT_MODEL_REPORT_DIR / "m3"
 
 
 class ConfigurationError(ValueError):
@@ -23,6 +25,8 @@ class Settings:
     raw_data_dir: Path
     model_artifact_dir: Path
     model_report_dir: Path
+    m3_model_artifact_dir: Path
+    m3_model_report_dir: Path
     random_seed: int
 
 
@@ -39,6 +43,12 @@ def get_settings() -> Settings:
         "MARITIME_CBM_MODEL_ARTIFACT_DIR", DEFAULT_MODEL_ARTIFACT_DIR
     )
     model_report_dir = _resolve_path("MARITIME_CBM_MODEL_REPORT_DIR", DEFAULT_MODEL_REPORT_DIR)
+    # M3-specific overrides take precedence. Without them, M3 follows the resolved
+    # shared modeling root, including any parent-level environment override.
+    m3_model_artifact_dir = _resolve_path(
+        "MARITIME_CBM_M3_MODEL_ARTIFACT_DIR", model_artifact_dir / "m3"
+    )
+    m3_model_report_dir = _resolve_path("MARITIME_CBM_M3_MODEL_REPORT_DIR", model_report_dir / "m3")
 
     seed_value = os.getenv("MARITIME_CBM_RANDOM_SEED", str(DEFAULT_RANDOM_SEED))
     try:
@@ -52,5 +62,7 @@ def get_settings() -> Settings:
         raw_data_dir=raw_data_dir,
         model_artifact_dir=model_artifact_dir,
         model_report_dir=model_report_dir,
+        m3_model_artifact_dir=m3_model_artifact_dir,
+        m3_model_report_dir=m3_model_report_dir,
         random_seed=random_seed,
     )
