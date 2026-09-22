@@ -153,13 +153,21 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 
 ### M5. 서비스화
 
-- FastAPI 추론 API
-- 입력 검증
+- M3 `m3-linear-residual-mlp-v1`을 1차 배포 모델로 사용하는 FastAPI 추론 API
+- 배포 모델·전처리·입력 범위·경보 정책 계약을 `config/deployment_model.json`에서 버전 관리
+- 계약에는 모델·정책 버전, checkpoint SHA-256, 12개 입력 순서, 허용 운항 속도,
+  연속 센서 범위, target 순서와 경보 임계값을 기록하고 불일치하면 서비스 시작을 중단
+- 상태 추정과 경보 평가 API를 분리하고 단건·배치 상태 추정 제공
+- Pydantic 공통 요청 설정으로 추가 필드와 NaN·무한대를 거부
+- 운항 속도 `v`는 3~27 knots의 3 knots 간격 9개 값만 허용하고 나머지 11개 센서는
+  상태 그룹 train에서 관측한 min/max 범위를 양 끝 포함으로 검증
+- 범위 밖 입력을 clipping하지 않고 `422`로 거부하며 배치는 1~100건으로 제한
+- FastAPI 기본 validation 오류를 민감한 요청 본문과 내부 경로를 제외한 공통 오류 형식으로 변환
 - 단위·통합 테스트
 - Docker 실행
 - Docker smoke test
 - 확정된 구성 기준 아키텍처와 재현 절차 시각화
-- 고정된 측정 조건에서 API 지연시간과 메모리 사용량 기록
+- 고정된 Docker/Linux 조건에서 API 지연시간, cold start와 메모리 사용량 기록
 - README 실행 예시, 실험 결과 및 포트폴리오 설명 최종 보완
 - 배포 모델 버전, API 입력·출력과 제한사항을 `docs/MODEL_CARD.md`에 최종 반영
 
@@ -175,15 +183,38 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 - 시계열 예측, 미래 고장 예측 및 잔여수명 예측
 - 근거 없는 LSTM 시계열 모델
 
-## 6. API 후보
+## 6. API 계약
 
-- `GET /health`
-- `GET /model/info`
-- `POST /v1/condition/predict`
-- `POST /v1/condition/batch`
-- `POST /v1/alert/evaluate`
+| endpoint | 요청 | 응답 최소 요건 |
+|---|---|---|
+| `GET /health` | 없음 | 서비스 상태와 모델 로드 상태 |
+| `GET /model/info` | 없음 | 모델·정책 버전, 입력 순서·범위와 경보 기준 |
+| `POST /v1/condition/predict` | 이름이 명시된 12개 센서값 1건 | 모델 버전과 `kMc`, `kMt` 예측값 |
+| `POST /v1/condition/batch` | 같은 입력 1~100건 | 입력 순서를 보존한 모델 버전과 예측 목록 |
+| `POST /v1/alert/evaluate` | 유한한 `kMc`, `kMt` 계수 | 정책 버전, 대상별·전체 열화도와 상태, 판단 기준 |
 
-최종 API 계약은 M5 시작 전에 승인받는다.
+상태 추정과 경보 평가를 결합하지 않는다. `/v1/condition/*`는 열화 상태 계수만 추정하고,
+`/v1/alert/evaluate`는 전달받은 계수에 M4 정책을 적용한다. 경보 입력 계수는 회귀 모델의
+공식 범위 이탈을 보존하기 위해 clipping하거나 공식 계수 범위로 제한하지 않는다.
+
+상태 추정 입력 순서는 다음 12개 이름으로 고정한다.
+
+```text
+v, GTT, GTn, GGn, Ts, T48, T2, P48, P2, Pexh, TIC, mf
+```
+
+요청 모델은 `ConfigDict(extra="forbid", allow_inf_nan=False)`를 공통 적용한다. validation
+실패는 `422`와 다음 envelope로 반환하며 `details`에는 정제한 위치·유형·메시지만 포함한다.
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "입력값이 API 계약을 만족하지 않는다.",
+    "details": []
+  }
+}
+```
 
 ## 7. 완료 기준
 

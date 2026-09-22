@@ -2,18 +2,20 @@
 
 ## 모델 개요
 
-- 모델 ID: `m2-random-forest-baseline-v1`
-- 상태: M2 기준 모델, M3 비교 모델과 M4 경보 정책 평가 완료
-- 구현체: scikit-learn 1.9.1 `RandomForestRegressor`
+- M2 기준 모델 ID: `m2-random-forest-baseline-v1`
+- M5 1차 배포 모델 ID: `m3-linear-residual-mlp-v1`
+- 상태: M2·M3 비교와 M4 경보 정책 평가 완료, M5 배포 모델·API 계약 확정
+- M2 구현체: scikit-learn 1.9.1 `RandomForestRegressor`
+- M3 구현체: PyTorch 2.14.0 선형 잔차 MLP
 - 목적: 정상상태 시뮬레이션 센서값에서 `kMc`, `kMt` 열화 상태 계수를 동시에 추정
-- 기준 Git commit: `129ae3c`
+- M2 기준 Git commit: `129ae3c`
 
 이 모델은 실제 선박 고장진단 모델이 아니다. 실제 고장 라벨, 타임스탬프와 공식 경보
 임계값이 없는 공개 시뮬레이션 데이터로 만든 PoC 기준 모델이다.
 
-M3 비교 모델 ID는 `m3-linear-residual-mlp-v1`이며 PyTorch 2.14.0으로 구현했다. M3 결과가
-M2 배포 후보를 자동 교체하지 않으며, 최종 배포 모델 선택은 M4·M5 요구사항과 함께 별도로
-결정한다.
+M3 결과와 M4 경보 정책 분석, artifact 크기와 macOS 예비 운영 측정을 함께 검토해 M3를
+M5 1차 배포 모델로 확정했다. M2는 비교 기준으로 보존하며 M3의 실제 운영 적합성은
+Docker/Linux에서 다시 검증한다.
 
 ## 데이터와 입력
 
@@ -97,8 +99,8 @@ validation은 선택 진단이고 holdout test는 고정 모델의 최종 강건
   안 된다.
 - M4 경보 정책에서는 holdout의 건강 방향 bias가 경보 누락으로 이어질 가능성을 별도로
   분석해야 한다.
-- 직렬화한 모델이 약 253MB이므로 M5 서비스화 전에 압축, 메모리와 지연시간을 측정하고
-  배포 artifact 정책을 결정해야 한다.
+- 직렬화한 모델이 약 253MB이고 macOS 예비 측정에서도 M3보다 메모리와 추론 지연이 커
+  M5 1차 배포 모델로 사용하지 않는다.
 
 ## M3 PyTorch 비교 모델
 
@@ -165,8 +167,8 @@ M3 checkpoint는 `artifacts/modeling/m3/`에만 저장하고 Git에 포함하지
 M3 상태 그룹 checkpoint는 전처리 상태를 포함해 46,325 byte이며 M2 Random Forest
 joblib 253,287,541 byte보다 약 5,468배 작다. 세 M3 checkpoint와 manifest·행 단위 예측을
 모두 포함한 로컬 M3 artifact는 415,937 byte로, 구성 범위가 다른 M2 모델 파일과 직접적인
-배포 크기 비교에는 사용하지 않는다. 작은 checkpoint는 M5 배포 후보 선정에 유리한
-관찰이지만 API 지연시간과 실제 메모리 사용량은 별도로 측정해야 한다.
+배포 크기 비교에는 사용하지 않는다. 작은 checkpoint와 M2 대비 낮은 예비 메모리·추론
+지연은 M5 배포 모델 채택 근거이며, 최종 운영 수치는 Docker/Linux에서 측정한다.
 
 ## M4 회귀 예측값 기반 경보 정책
 
@@ -195,8 +197,8 @@ M4는 M2·M3 모델을 재학습하지 않고 각 evaluation manifest와 저장�
 
 M2 Random Forest는 압축기 `kMc`와 터빈 `kMt`의 심한 열화 방향 holdout에서 학습 경계
 아래로 외삽하지 못해 대상 경보 Recall이 모두 0이었다. M3 선형 잔차 MLP는 각각 1.0000,
-0.9316으로 개선했지만 터빈 대상 2,295건 중 157건을 놓쳤다. 이는 M3를 M5 배포 모델의
-유력 후보로 만드는 근거지만 자동 채택을 뜻하지 않는다.
+0.9316으로 개선했지만 터빈 대상 2,295건 중 157건을 놓쳤다. 이 개선은 M3를 M5 1차 배포
+모델로 채택한 근거지만 실제 고장 탐지 성능이나 현장 안전성을 뜻하지 않는다.
 
 압축기·터빈 holdout의 대상 reference는 전부 양성이다. 따라서 이 두 행의 Precision·F1·
 FPR·PR-AUC는 모델 판별력을 나타낼 수 없어 `NA`로 기록했다. Recall·FN·miss rate만
@@ -234,6 +236,52 @@ M2의 목표 5% cutoff가 상태 그룹 test에서 5.88% FPR을 보인 것이 �
 예측의 SHA-256은
 `d21156993e179c5f0968aeada29bf8d56e62eb8c2220e93246be25ec1c2bdad8`이다. gzip의 파일명과
 생성 시각 metadata를 제거해 다른 경로에서 재실행해도 같은 해시가 생성됨을 확인했다.
+
+## M5 배포 결정과 API 계약
+
+M5 1차 배포 모델은 상태 그룹 seed 42 checkpoint를 사용하는
+`m3-linear-residual-mlp-v1`이다. M5 구현에서는 추적되는 `config/deployment_model.json`에
+모델·정책 버전, checkpoint SHA-256, target·입력 순서, 허용 속도와 센서 범위, 경보
+임계값을 기록한다. 서비스는 계약과 실제 checkpoint·전처리 상태가 다르면 시작하지 않도록
+구현한다.
+
+상태 추정 API는 다음 12개 이름만 입력받으며 추가 필드, NaN과 무한대를 허용하지 않는다.
+
+```text
+v, GTT, GTn, GGn, Ts, T48, T2, P48, P2, Pexh, TIC, mf
+```
+
+`v`는 `{3, 6, 9, 12, 15, 18, 21, 24, 27}` 중 하나여야 한다. 나머지 센서는 기본 상태
+그룹 train에서 관측한 [`DATASET.md`](DATASET.md)의 양 끝 포함 min/max를 적용한다. 단건은
+12개 센서 한 건, 배치는 1~100건을 받는다. 범위 밖 입력은 clipping하지 않고 `422`로
+거부한다.
+
+- `GET /health`: 서비스와 모델 로드 상태
+- `GET /model/info`: 모델·정책 버전, 입력 계약과 경보 기준
+- `POST /v1/condition/predict`: 모델 버전과 `kMc`, `kMt` 상태 계수 추정
+- `POST /v1/condition/batch`: 입력 순서를 보존한 1~100건 상태 계수 추정
+- `POST /v1/alert/evaluate`: 입력한 `kMc`, `kMt`의 대상별·전체 열화도, 상태와 판단 기준
+
+경보 평가 입력은 유한해야 하지만 공식 계수 범위로 제한하거나 clipping하지 않는다. 이는
+회귀 예측의 범위 이탈을 M4 정책에서 그대로 해석하기 위한 결정이다. 상태 추정과 경보
+평가는 별도 endpoint이므로 예측 응답을 경보나 고장 판정으로 오해하지 않아야 한다.
+
+### 예비 운영 측정
+
+아래 값은 재학습 없이 기존 artifact를 macOS 로컬에서 한 번 측정한 예비 결과다. 실행 명령,
+부하 조건과 반복 측정이 고정된 최종 benchmark가 아니므로 방향성 확인에만 사용한다.
+
+| 항목 | M2 Random Forest | M3 선형 잔차 MLP |
+|---|---:|---:|
+| import + model load | 1.256s | 1.582s |
+| process peak RSS | 591.9MB | 294.2MB |
+| 단건 예측 평균 지연시간 (`N=200`) | 5.572ms | 0.164ms |
+| 100건 batch 예측 | 5.987ms | 0.227ms |
+
+M3는 PyTorch import 비용 때문에 cold start가 약 0.3초 느렸지만 peak RSS는 약 절반이고
+단건 추론은 약 34배 빨랐다. macOS와 Linux의 `ru_maxrss` 단위가 다르므로 이 수치를
+Docker/Linux 결과와 직접 비교하지 않는다. M5에서 고정 조건으로 cold start, 상시 메모리와
+단건·배치 API 지연시간을 다시 측정한다.
 
 ## 재현성과 산출물
 

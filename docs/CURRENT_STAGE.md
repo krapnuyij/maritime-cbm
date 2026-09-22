@@ -42,7 +42,7 @@ M5. 서비스화
 
 ## 진행 중
 
-- M5 배포 모델·API 계약과 Docker 서비스화 계획 수립 준비
+- 확정된 M5 배포 모델·API 계약을 기준으로 FastAPI·Docker 서비스화 구현 계획 수립 준비
 
 ## 진행 관리 원칙
 
@@ -54,10 +54,10 @@ M5. 서비스화
 
 ## 다음 작업
 
-1. M4 결과를 근거로 M5 배포 모델과 API 입력·출력 계약 확정
-2. FastAPI 추론·경보 API와 입력 검증 구현
+1. M5 FastAPI·Docker 전체 구현 계획 수립과 승인
+2. 배포 계약 파일, FastAPI 추론·경보 API와 입력 검증 구현
 3. Docker 실행 환경과 smoke test 구성
-4. 고정 조건의 API 지연시간·메모리 측정과 포트폴리오 문서 최종화
+4. 고정 Docker/Linux 조건의 API 지연시간·메모리 측정과 포트폴리오 문서 최종화
 
 ## 확정된 결정
 
@@ -163,17 +163,30 @@ M5. 서비스화
 - 압축기·터빈 holdout의 대상 reference는 모두 양성이므로 Precision·F1·FPR·PR-AUC는 `NA`로 기록한다.
 - 상태 그룹 validation 목표 FPR 1% cutoff를 적용한 상태 그룹 test `any` Recall/FPR은 M2 0.981481/0.004591, M3 0.998575/0.007346이다.
 - 목표 FPR은 validation 제약이며 test realized FPR을 보장하지 않는다. 목표 5%에서 M2 상태 그룹 test `any` FPR은 0.058770이었다.
-- M4 결과는 M3를 유력한 M5 배포 후보로 뒷받침하지만 배포 모델과 API 계약은 M5에서 확정한다.
+- M5 1차 배포 모델은 `m3-linear-residual-mlp-v1`로 확정한다. M2 Random Forest는 비교 기준으로 유지한다.
+- M3 채택 근거는 M2보다 낮은 상태 그룹·holdout 오차, holdout 경보 누락 개선, 46,325 byte checkpoint와 macOS 예비 측정의 낮은 peak RSS·추론 지연이다.
+- macOS 예비 측정은 모델 결정의 보조 근거이며 최종 운영 수치는 고정 Docker/Linux 조건에서 다시 측정한다.
+- M5 API는 상태 추정과 경보 평가를 분리한 `GET /health`, `GET /model/info`, `POST /v1/condition/predict`, `POST /v1/condition/batch`, `POST /v1/alert/evaluate`로 구성한다.
+- 상태 추정 API는 원본 16개가 아니라 `v`, `GTT`, `GTn`, `GGn`, `Ts`, `T48`, `T2`, `P48`, `P2`, `Pexh`, `TIC`, `mf` 12개 이름을 입력받는다.
+- `v`는 3~27 knots의 3 knots 간격 9개 값만 허용하고, 나머지 11개 센서는 기본 상태 그룹 train 8,352행의 min/max를 양 끝 포함 범위로 사용한다.
+- 전체 11,934행과 네 시나리오 validation·test 8개 역할에서 위 11개 센서 범위를 벗어난 행은 0개다.
+- 상태 추정 입력은 추가 필드와 NaN·무한대를 거부하고 범위 밖 값을 clipping하지 않고 `422`로 반환한다.
+- 배치 요청은 1~100건으로 강제하고 입력 순서와 같은 순서로 예측을 반환한다.
+- 경보 평가는 유한한 `kMc`, `kMt`를 입력받고 공식 계수 범위 이탈을 clipping하거나 거부하지 않은 채 M4 열화도·상태 정책을 적용한다.
+- validation 오류는 `VALIDATION_ERROR` 코드, 공통 메시지와 정제된 세부 정보로 구성한 `error` envelope로 반환하며 요청 본문과 내부 경로를 노출하지 않는다.
+- `config/deployment_model.json`은 모델·정책 버전, checkpoint SHA-256, 입력 순서·범위, target 순서와 경보 임계값을 기록하며 모델·계약 불일치 시 시작 단계에서 실패한다.
 - 원본 데이터는 Git에 커밋하지 않는다.
 - 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
 
 ## 미확정 사항
 
-- 최종 API 계약
+- 현재 없음
 
 ## 마지막 검증
 
+- 2026-09-22: 기본 상태 그룹 train 기준 11개 연속 센서 범위를 전체 데이터와 네 시나리오 validation·test에 적용해 범위 이탈 0행 확인
+- 2026-09-22: macOS 예비 측정에서 M2/M3 peak RSS 591.9/294.2MB, 단건 평균 지연시간 5.572/0.164ms 확인
 - 2026-09-22: commit `8b8d00b` 기준에서 M2·M3 artifact SHA-256 검증 후 재학습 없이 M4 공식 평가 완료
 - 2026-09-22: M4 주 임계값 0.8에서 상태 그룹과 압축기·터빈 holdout 경보 지표 및 단일 클래스 `NA` 처리 확인
 - 2026-09-22: 결정적 gzip으로 재생성한 M4 행 단위 정책 예측 SHA-256 `d21156993e179c5f0968aeada29bf8d56e62eb8c2220e93246be25ec1c2bdad8`
