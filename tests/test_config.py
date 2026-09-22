@@ -5,12 +5,15 @@ import pytest
 from maritime_cbm.config import (
     DEFAULT_ALERT_ARTIFACT_DIR,
     DEFAULT_ALERT_REPORT_DIR,
+    DEFAULT_DEPLOYMENT_CHECKPOINT_PATH,
+    DEFAULT_DEPLOYMENT_CONTRACT_PATH,
     DEFAULT_M3_MODEL_ARTIFACT_DIR,
     DEFAULT_M3_MODEL_REPORT_DIR,
     DEFAULT_MODEL_ARTIFACT_DIR,
     DEFAULT_MODEL_REPORT_DIR,
     DEFAULT_RANDOM_SEED,
     DEFAULT_RAW_DATA_DIR,
+    DEFAULT_SERVICE_REPORT_DIR,
     ConfigurationError,
     get_settings,
 )
@@ -24,6 +27,9 @@ def test_get_settings_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MARITIME_CBM_M3_MODEL_REPORT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_ALERT_ARTIFACT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_ALERT_REPORT_DIR", raising=False)
+    monkeypatch.delenv("MARITIME_CBM_DEPLOYMENT_CONTRACT_PATH", raising=False)
+    monkeypatch.delenv("MARITIME_CBM_DEPLOYMENT_CHECKPOINT_PATH", raising=False)
+    monkeypatch.delenv("MARITIME_CBM_SERVICE_REPORT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_RANDOM_SEED", raising=False)
 
     settings = get_settings()
@@ -35,6 +41,9 @@ def test_get_settings_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.m3_model_report_dir == DEFAULT_M3_MODEL_REPORT_DIR
     assert settings.alert_artifact_dir == DEFAULT_ALERT_ARTIFACT_DIR
     assert settings.alert_report_dir == DEFAULT_ALERT_REPORT_DIR
+    assert settings.deployment_contract_path == DEFAULT_DEPLOYMENT_CONTRACT_PATH
+    assert settings.deployment_checkpoint_path == DEFAULT_DEPLOYMENT_CHECKPOINT_PATH
+    assert settings.service_report_dir == DEFAULT_SERVICE_REPORT_DIR
     assert settings.random_seed == DEFAULT_RANDOM_SEED
 
 
@@ -49,6 +58,12 @@ def test_get_settings_accepts_environment_overrides(
     monkeypatch.setenv("MARITIME_CBM_RANDOM_SEED", "7")
     monkeypatch.setenv("MARITIME_CBM_ALERT_ARTIFACT_DIR", "artifacts/test-alerting")
     monkeypatch.setenv("MARITIME_CBM_ALERT_REPORT_DIR", "reports/test-alerting")
+    monkeypatch.setenv("MARITIME_CBM_DEPLOYMENT_CONTRACT_PATH", "config/test-deployment.json")
+    monkeypatch.setenv(
+        "MARITIME_CBM_DEPLOYMENT_CHECKPOINT_PATH",
+        str(tmp_path / "deployment.pt"),
+    )
+    monkeypatch.setenv("MARITIME_CBM_SERVICE_REPORT_DIR", "reports/test-service")
 
     settings = get_settings()
 
@@ -59,6 +74,11 @@ def test_get_settings_accepts_environment_overrides(
     assert settings.m3_model_report_dir == settings.model_report_dir / "m3"
     assert settings.alert_artifact_dir == DEFAULT_ALERT_ARTIFACT_DIR.parent / "test-alerting"
     assert settings.alert_report_dir == DEFAULT_ALERT_REPORT_DIR.parent / "test-alerting"
+    assert settings.deployment_contract_path == DEFAULT_DEPLOYMENT_CONTRACT_PATH.parent / (
+        "test-deployment.json"
+    )
+    assert settings.deployment_checkpoint_path == tmp_path / "deployment.pt"
+    assert settings.service_report_dir == DEFAULT_SERVICE_REPORT_DIR.parent / "test-service"
     assert settings.random_seed == 7
 
 
