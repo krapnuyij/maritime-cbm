@@ -89,10 +89,16 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 
 ### M2. 기준 모델
 
-- scikit-learn 기준 모델
+- scikit-learn `DummyRegressor`, Ridge와 Random Forest 기준 모델
 - `kMc`, `kMt` 다중 출력 회귀
+- 속도별 학습 평균으로 11개 센서를 중심화하고 `v`를 유지하는 Ridge 후보 비교
+- 기본 상태 그룹 validation의 대상별 NRMSE 평균으로 모델과 하이퍼파라미터 선택
+- NRMSE 분모는 공식 계수 범위인 `kMc` 0.050, `kMt` 0.025로 고정
+- 행 랜덤과 압축기·터빈 holdout validation은 선택에 사용하지 않고 비교·강건성 진단으로 보고
+- 선택 결과를 고정한 뒤 네 시나리오 test를 한 번 평가하고 결과 확인 후 재조정하지 않음
 - 기본 평가는 대상별 MAE, RMSE, R²를 함께 보고
 - 연속 열화 구간 holdout의 대상 계수는 MAE와 RMSE를 주지표, R²를 보조 지표로 해석
+- 예측값을 공식 계수 범위로 clipping하지 않고 범위 이탈과 외삽 포화를 오류 분석에 포함
 - 평가 리포트
 - 오류 사례 분석
 - 최종 기준 모델 선정 후 `docs/MODEL_CARD.md` 생성

@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M2. 기준 모델
+M3. PyTorch 모델
 
 ## 완료
 
@@ -21,6 +21,10 @@ M2. 기준 모델
 - 전체 데이터 집계 통계, pooled·속도 조건부 상관 및 속도 간 분산 비율 CSV와 핵심 EDA 그림 3개 생성
 - 합성 상태 격자의 분할 해시 회귀 테스트와 Ubuntu 24.04 Linux CI 구성
 - 첫 GitHub Actions Linux/X64 실행에서 lock·Ruff·포맷·pytest 검증 통과
+- scikit-learn 1.9.1 기반 다중 출력 기준 모델 후보와 누수 방지 Pipeline 구현
+- 17개 후보를 validation에서 비교하고 상태 그룹 NRMSE 기준 최종 Random Forest 선택
+- 고정된 최종 모델을 네 시나리오 test에서 한 번 평가하고 외삽 포화 확인
+- 집계 지표·오류 분석 그림, 실험 기록과 `MODEL_CARD.md` 작성
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -30,7 +34,7 @@ M2. 기준 모델
 
 ## 진행 중
 
-- M2 기준 모델 구현 계획 수립 준비
+- M3 PyTorch 모델 구현 계획 수립 준비
 
 ## 진행 관리 원칙
 
@@ -42,10 +46,10 @@ M2. 기준 모델
 
 ## 다음 작업
 
-1. M2 기준 모델 구현 계획 수립 및 승인
-2. 동일한 분할과 평가 지표를 사용하는 학습·평가 파이프라인 구현
-3. 해석 가능한 scikit-learn 기준 모델 비교와 오류 분석
-4. 최종 기준 모델 선정 후 `docs/MODEL_CARD.md` 생성
+1. M3 소형 MLP 구현·평가 계획 수립 및 승인
+2. M2와 동일한 입력·분할·지표를 사용하는 PyTorch 학습 Pipeline 구현
+3. 기준 Random Forest와 상태 그룹·holdout 성능 비교
+4. 과적합과 외삽 한계를 분석하고 `docs/MODEL_CARD.md` 갱신
 
 ## 확정된 결정
 
@@ -88,6 +92,20 @@ M2. 기준 모델
 - 분할 인덱스는 little-endian int64 바이트의 SHA-256으로 고정한다.
 - EDA 그림은 `eda` 의존성 그룹의 Matplotlib Agg 백엔드로 생성하며, 집계 CSV와 핵심 PNG만 커밋 대상으로 한다.
 - Linux CI는 원본 데이터를 다운로드하지 않고 합성 격자로 문서화된 분할 해시 12개를 검증한다.
+- M2 모델 후보는 평균 예측 Dummy, 원시 입력 Ridge, 속도 중심화 Ridge와 원시 입력 Random Forest로 구성한다.
+- 속도 중심화 Ridge는 `v`를 입력에 유지하고 나머지 11개 센서만 학습 데이터의 속도별 평균으로 중심화한다.
+- M2 최종 모델은 기본 상태 그룹 validation의 `kMc`, `kMt` NRMSE 평균이 가장 낮은 후보로 선택한다.
+- NRMSE는 `kMc` RMSE를 0.050, `kMt` RMSE를 0.025로 나눠 계산하며 반올림 전 값으로 비교한다.
+- 선택 점수가 같으면 두 대상 중 더 큰 NRMSE, 사전 정의한 모델 복잡도 순서로 결정하고 Dummy는 선택 대상에서 제외한다.
+- 행 랜덤과 압축기·터빈 holdout validation은 모델 선택에 사용하지 않고 비교·외삽 강건성 진단으로 보고한다.
+- holdout validation은 선택 진단이고 holdout test는 고정된 최종 모델의 최종 강건성 평가로 구분한다.
+- 최종 선택 결과를 고정한 뒤 네 시나리오 test를 한 번 평가하며 test 결과를 근거로 같은 M2 실험에서 모델을 재조정하지 않는다.
+- 모델과 행 단위 예측은 `artifacts/modeling/`에 저장하고 집계 지표와 핵심 그림만 `reports/modeling/`에 커밋한다.
+- M2 최종 기준 모델은 `random_forest_raw_leaf_1_features_1p0`이며 tree 300개, `min_samples_leaf=1`, `max_features=1.0`, seed 42를 사용한다.
+- 최종 모델의 상태 그룹 validation 평균 NRMSE는 0.021853이며 test R²는 `kMc` 0.996720, `kMt` 0.992838이다.
+- 압축기 holdout test `kMc` NRMSE는 0.209780, 터빈 holdout test `kMt` NRMSE는 0.366661로 심한 열화 방향 외삽 성능이 크게 저하된다.
+- holdout 대상의 건강 방향 bias는 압축기 `kMc` +0.009668, 터빈 `kMt` +0.008830이며 M4 경보 정책의 핵심 제한사항으로 다룬다.
+- 로컬 기준 모델 joblib은 `artifacts/modeling/`에만 저장하고 Git에 커밋하지 않는다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
 - Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
@@ -97,13 +115,17 @@ M2. 기준 모델
 
 ## 미확정 사항
 
-- 최종 기준 모델
 - 경보 임계값의 정의와 검증 방법
 - Isolation Forest 또는 Autoencoder 선택 실험의 수행 여부
 - 최종 API 계약
 
 ## 마지막 검증
 
+- 2026-09-22: commit `129ae3c`의 clean 상태에서 validation 전용 17개 후보 선택 실험 완료
+- 2026-09-22: 고정 Random Forest로 행 랜덤·상태 그룹·압축기·터빈 holdout test 1회 평가 완료
+- 2026-09-22: 상태 그룹 test `kMc`/`kMt` R² 0.996720/0.992838, holdout 외삽 포화와 건강 방향 bias 확인
+- 2026-09-22: joblib 재로드 예측과 저장 CSV 최대 절대 차이 `1.11e-16`
+- 2026-09-22: M2 구현 후 `pytest -q` 63개 테스트 통과, Ruff·포맷·`uv lock --check` 통과
 - 2026-09-21: GitHub Actions CI 실행 #1(`5948fd3`) 성공, Ubuntu 24.04.5 LTS·Linux/X64(`x86_64`)·Runner Image `20260907.300.1`
 - 2026-09-21: CI에서 uv 0.12.17·Python 3.13.15로 lock·Ruff·포맷 검사 통과, 39개 테스트 성공·원본 데이터 통합 테스트 3개 skip
 - 2026-09-21: Linux/aarch64 컨테이너(`5948fd3`, Debian 13, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 42개 테스트와 Ruff·포맷 검사 통과
