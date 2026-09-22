@@ -38,7 +38,7 @@ jobs:
         run: uv lock --check
 
       - name: Sync dependencies
-        run: uv sync --locked --group eda --group modeling
+        run: uv sync --locked --group eda --group service
 
       - name: Show environment
         run: |
@@ -47,14 +47,97 @@ jobs:
           echo "${PRETTY_NAME}"
           uname -srm
           uv --version
-          uv run --locked --group eda --group modeling python --version
-          uv run --locked --group eda --group modeling python -c "import torch; print(torch.__version__)"
+          uv run --locked --group eda --group service python --version
+          uv run --locked --group eda --group service python -c "import torch; print(torch.__version__)"
 
       - name: Lint
-        run: uv run --locked --group eda --group modeling ruff check .
+        run: uv run --locked --group eda --group service ruff check .
 
       - name: Check formatting
-        run: uv run --locked --group eda --group modeling ruff format --check .
+        run: uv run --locked --group eda --group service ruff format --check .
 
       - name: Test
-        run: uv run --locked --group eda --group modeling pytest -q
+        run: uv run --locked --group eda --group service pytest -q
+
+  docker-smoke:
+    name: Docker Smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.17"
+          enable-cache: true
+
+      - name: Create synthetic smoke bundle
+        run: |
+          uv sync --locked --group service
+          uv run --locked --group service python scripts/create_synthetic_deployment_bundle.py \
+            --output-directory .docker-smoke
+
+      - name: Build image
+        run: docker build --tag "maritime-cbm:${GITHUB_SHA}" .
+
+      - name: Run read-only smoke test
+        run: |
+          set -euo pipefail
+          container_name="maritime-cbm-smoke"
+          checkpoint_path="${PWD}/.docker-smoke/synthetic-smoke.pt"
+          contract_path="${PWD}/.docker-smoke/synthetic-contract.json"
+          before_sha="$(sha256sum "${checkpoint_path}" | cut -d ' ' -f 1)"
+          trap 'docker rm --force "${container_name}" >/dev/null 2>&1 || true' EXIT
+
+          docker run --detach --name "${container_name}" \
+            --publish 127.0.0.1:8000:8000 \
+            --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,nodev,size=67108864 \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --mount "type=bind,src=${checkpoint_path},dst=/run/model/state_group_seed_42.pt,readonly" \
+            --mount "type=bind,src=${contract_path},dst=/run/config/deployment_model.json,readonly" \
+            --env MARITIME_CBM_DEPLOYMENT_CONTRACT_PATH=/run/config/deployment_model.json \
+            "maritime-cbm:${GITHUB_SHA}"
+
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "${container_name}")" = "true"
+          test "$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/run/model/state_group_seed_42.pt"}}{{.RW}}{{end}}{{end}}' "${container_name}")" = "false"
+          test "$(docker exec "${container_name}" id -u)" = "10001"
+          if docker exec "${container_name}" python -c \
+            'from pathlib import Path; Path("/run/model/state_group_seed_42.pt").write_bytes(b"x")'; then
+            echo "checkpoint write unexpectedly succeeded"
+            exit 1
+          fi
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            if test "${attempt}" = "30"; then
+              docker logs "${container_name}"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          docker exec "${container_name}" python -m maritime_cbm.api.healthcheck
+
+          sensor='{"v":3.0,"GTT":50.0,"GTn":50.0,"GGn":50.0,"Ts":50.0,"T48":50.0,"T2":50.0,"P48":50.0,"P2":50.0,"Pexh":50.0,"TIC":50.0,"mf":50.0}'
+          curl --fail --silent http://127.0.0.1:8000/health >/dev/null
+          curl --fail --silent http://127.0.0.1:8000/model/info >/dev/null
+          curl --fail --silent --header 'content-type: application/json' \
+            --data "${sensor}" http://127.0.0.1:8000/v1/condition/predict >/dev/null
+          curl --fail --silent --header 'content-type: application/json' \
+            --data "{\"items\":[${sensor}]}" \
+            http://127.0.0.1:8000/v1/condition/batch >/dev/null
+          curl --fail --silent --header 'content-type: application/json' \
+            --data '{"kMc":0.96,"kMt":0.98}' \
+            http://127.0.0.1:8000/v1/alert/evaluate >/dev/null
+
+          after_sha="$(sha256sum "${checkpoint_path}" | cut -d ' ' -f 1)"
+          test "${before_sha}" = "${after_sha}"
