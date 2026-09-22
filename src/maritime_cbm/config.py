@@ -12,6 +12,8 @@ DEFAULT_MODEL_ARTIFACT_DIR = PROJECT_ROOT / "artifacts" / "modeling"
 DEFAULT_MODEL_REPORT_DIR = PROJECT_ROOT / "reports" / "modeling"
 DEFAULT_M3_MODEL_ARTIFACT_DIR = DEFAULT_MODEL_ARTIFACT_DIR / "m3"
 DEFAULT_M3_MODEL_REPORT_DIR = DEFAULT_MODEL_REPORT_DIR / "m3"
+DEFAULT_ALERT_ARTIFACT_DIR = PROJECT_ROOT / "artifacts" / "alerting"
+DEFAULT_ALERT_REPORT_DIR = PROJECT_ROOT / "reports" / "alerting"
 
 
 class ConfigurationError(ValueError):
@@ -27,6 +29,8 @@ class Settings:
     model_report_dir: Path
     m3_model_artifact_dir: Path
     m3_model_report_dir: Path
+    alert_artifact_dir: Path
+    alert_report_dir: Path
     random_seed: int
 
 
@@ -49,6 +53,10 @@ def get_settings() -> Settings:
         "MARITIME_CBM_M3_MODEL_ARTIFACT_DIR", model_artifact_dir / "m3"
     )
     m3_model_report_dir = _resolve_path("MARITIME_CBM_M3_MODEL_REPORT_DIR", model_report_dir / "m3")
+    alert_artifact_dir = _resolve_path(
+        "MARITIME_CBM_ALERT_ARTIFACT_DIR", DEFAULT_ALERT_ARTIFACT_DIR
+    )
+    alert_report_dir = _resolve_path("MARITIME_CBM_ALERT_REPORT_DIR", DEFAULT_ALERT_REPORT_DIR)
 
     seed_value = os.getenv("MARITIME_CBM_RANDOM_SEED", str(DEFAULT_RANDOM_SEED))
     try:
@@ -64,5 +72,7 @@ def get_settings() -> Settings:
         model_report_dir=model_report_dir,
         m3_model_artifact_dir=m3_model_artifact_dir,
         m3_model_report_dir=m3_model_report_dir,
+        alert_artifact_dir=alert_artifact_dir,
+        alert_report_dir=alert_report_dir,
         random_seed=random_seed,
     )
