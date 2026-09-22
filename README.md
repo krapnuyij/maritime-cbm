@@ -17,8 +17,8 @@
 
 ## 현재 상태
 
-M0 프로젝트 기반 구성과 M1 데이터 로드·검증, 특성 선택, EDA, 데이터 분할 및 Linux
-CI를 완료했다. M2 모델 학습·성능 평가는 아직 수행하지 않았다.
+M0 프로젝트 기반 구성, M1 데이터 파이프라인과 M2 scikit-learn 기준 모델 선택·평가를
+완료했다. M3 PyTorch 모델은 아직 구현하지 않았다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -26,11 +26,13 @@ CI를 완료했다. M2 모델 학습·성능 평가는 아직 수행하지 않�
 - [현재 진행 상황](docs/CURRENT_STAGE.md)
 - [데이터셋 안내](docs/DATASET.md)
 - [실험 기록](docs/EXPERIMENT_LOG.md)
+- [기준 모델 카드](docs/MODEL_CARD.md)
 
 ## 개발 환경
 
 - Python 3.13
 - uv
+- scikit-learn
 - Ruff
 - pytest
 
@@ -60,6 +62,22 @@ EDA 그림까지 재생성하려면 전용 의존성 그룹을 추가로 설치�
 uv sync --group eda
 uv run --group eda python -m maritime_cbm.data.eda
 ```
+
+## 기준 모델 재현
+
+M2 모델 선택은 validation만 사용하고, 선택 manifest를 고정한 뒤 test를 한 번 평가한다.
+
+```bash
+uv sync --locked --group eda
+uv run --locked --group eda python -m maritime_cbm.modeling.benchmark select
+uv run --locked --group eda python -m maritime_cbm.modeling.benchmark evaluate
+```
+
+기본 상태 그룹 validation에서 선택된 모델은 300개 tree를 사용하는 다중 출력 Random
+Forest다. 상태 그룹 test의 R²는 `kMc` 0.9967, `kMt` 0.9928이지만, 학습에서 보지 못한
+심한 열화 방향 holdout에서는 오차가 크게 증가했다. 결과를 실제 고장진단이나 미관측
+열화 상태에 대한 보장으로 해석하지 않는다. 세부 결과는 [모델 카드](docs/MODEL_CARD.md)와
+[모델링 리포트](reports/modeling/)에 있다.
 
 ## 데이터 준비와 검증
 
@@ -91,8 +109,10 @@ uv run python -m maritime_cbm.data.validation /path/to/uci_cbm
 ├── data/                  # 로컬 데이터, Git 제외
 │   ├── raw/
 │   └── processed/
+├── artifacts/modeling/    # 로컬 모델·행 단위 예측, Git 제외
 ├── docs/                  # 명세, 데이터 및 실험 문서
 ├── reports/eda/           # 재현 가능한 집계 EDA 표와 핵심 그림
+├── reports/modeling/      # 기준 모델 집계 지표와 핵심 그림
 ├── src/maritime_cbm/      # 애플리케이션 패키지
 ├── tests/                 # 자동화 테스트
 ├── pyproject.toml         # 프로젝트 및 도구 설정
