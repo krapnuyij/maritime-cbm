@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M4. 회귀 예측값 기반 경보 정책
+M5. 서비스화
 
 ## 완료
 
@@ -29,6 +29,10 @@ M4. 회귀 예측값 기반 경보 정책
 - 세 seed 상태 그룹 validation으로 속도 중심화 선형 잔차 MLP 선택
 - 고정 checkpoint를 네 시나리오 test에서 한 번 평가하고 M2 기준 모델과 비교
 - 상태 그룹과 심한 열화 방향 holdout에서 Random Forest 대비 NRMSE 감소 확인
+- 회귀 예측값 기반 열화도와 `normal`·`watch`·`alert` 정책 모듈 구현
+- 단일 클래스 안전 경보 지표와 validation 고정 FPR cutoff 구현
+- M2·M3 artifact 검증 후 재학습 없이 M4 경보 정책 공식 평가 완료
+- M3가 M2의 심한 열화 방향 경보 누락을 크게 줄이는 결과 확인
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -38,7 +42,7 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 진행 중
 
-- M4 회귀 예측값 기반 경보 정책의 임계값 정의·검증 방법 계획 수립 준비
+- M5 배포 모델·API 계약과 Docker 서비스화 계획 수립 준비
 
 ## 진행 관리 원칙
 
@@ -50,10 +54,10 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 다음 작업
 
-1. M3 결과·문서 변경 검토와 커밋 여부 결정
-2. M3 브랜치 CI 검증과 PR 준비
-3. M4 경보 정책의 임계값 정의·검증 계획 수립
-4. 실제 고장 라벨 부재와 holdout bias를 반영한 경보 평가 설계
+1. M4 결과를 근거로 M5 배포 모델과 API 입력·출력 계약 확정
+2. FastAPI 추론·경보 API와 입력 검증 구현
+3. Docker 실행 환경과 smoke test 구성
+4. 고정 조건의 API 지연시간·메모리 측정과 포트폴리오 문서 최종화
 
 ## 확정된 결정
 
@@ -137,20 +141,43 @@ M4. 회귀 예측값 기반 경보 정책
 - M3 압축기 holdout `kMc` NRMSE는 0.020581, 터빈 holdout `kMt` NRMSE는 0.055401이며 M2보다 각각 90.2%, 84.9% 낮다.
 - M3 holdout 대상 bias는 압축기 `kMc` +0.000695, 터빈 `kMt` +0.000996으로 감소했지만 건강 방향 과대 추정은 남아 있다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
+- M4 열화도는 `kMc`에 `(1-kMc)/0.050`, `kMt`에 `(1-kMt)/0.025`를 사용하고 두 값의 최댓값을 전체 열화도로 사용한다.
+- 회귀 예측의 공식 범위 이탈을 감추지 않기 위해 M4 열화도는 clipping하지 않는다.
+- M4 상태는 열화도 0.5 미만 `normal`, 0.5 이상 0.8 미만 `watch`, 0.8 이상 `alert`로 정의한다.
+- 주 경보 임계값 0.8은 `kMc ≤ 0.960`, `kMt ≤ 0.980`에 대응하는 PoC 정책 시나리오이며 공식 고장 임계값이 아니다.
+- 임계값 0.5·0.6·0.7·0.8·0.9의 민감도를 비교하되 test 결과로 임계값을 조정하지 않는다.
+- M4는 M2·M3에서 저장한 test 예측을 SHA-256 검증 후 재사용하고 모델을 재학습하거나 test 예측을 다시 생성하지 않는다.
+- 경보 평가 채널은 `kMc`, `kMt`, 두 상태 중 하나라도 경보인 `any`로 구성한다.
+- 기본 경보 지표는 TP·FP·TN·FN, Precision, Recall, F1, FPR, miss rate, Average Precision 기반 PR-AUC와 reference prevalence다.
+- reference가 단일 클래스인 경우 PR-AUC를 계산하지 않고 클래스 구성에 따라 정의 가능한 지표만 보고하며 나머지는 `NA`와 사유를 기록한다.
+- 전체 양성에서는 Recall·FN·miss rate만, 전체 음성에서는 FP·TN·FPR만 경보 성능 지표로 해석한다.
+- 고정 오경보율 cutoff는 상태 그룹 validation에서 목표 FPR 1%·5% 이하 조건으로 정하고 test·holdout에 그대로 적용한다.
+- holdout에 정상 표본이 없으면 고정 cutoff Recall은 보고하되 realized FPR은 `NA`로 기록한다.
+- M4 reference alert는 simulator 상태 계수에서 파생한 정책 상태이며 실제 고장 라벨이나 실제 고장 탐지 결과가 아니다.
+- M4는 기존 M2·M3 test를 활용한 downstream 분석이므로 새로운 독립 test라고 주장하지 않는다.
+- 타임스탬프가 없어 지속 시간·debounce·hysteresis 경보 정책은 평가하지 않는다.
+- 실제 정상 운항 라벨과 정상 모집단의 근거가 없어 M4에서 Isolation Forest와 Autoencoder는 수행하지 않는다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
-- Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
+- M4 주 임계값 0.8의 상태 그룹 `any` Recall/FPR은 M2 0.924501/0.000918, M3 0.955840/0이다.
+- 압축기 holdout `kMc` Recall은 M2 0, M3 1.0이고 터빈 holdout `kMt` Recall은 M2 0, M3 0.931590이다.
+- 압축기·터빈 holdout의 대상 reference는 모두 양성이므로 Precision·F1·FPR·PR-AUC는 `NA`로 기록한다.
+- 상태 그룹 validation 목표 FPR 1% cutoff를 적용한 상태 그룹 test `any` Recall/FPR은 M2 0.981481/0.004591, M3 0.998575/0.007346이다.
+- 목표 FPR은 validation 제약이며 test realized FPR을 보장하지 않는다. 목표 5%에서 M2 상태 그룹 test `any` FPR은 0.058770이었다.
+- M4 결과는 M3를 유력한 M5 배포 후보로 뒷받침하지만 배포 모델과 API 계약은 M5에서 확정한다.
 - 원본 데이터는 Git에 커밋하지 않는다.
 - 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
 
 ## 미확정 사항
 
-- 경보 임계값의 정의와 검증 방법
-- Isolation Forest 또는 Autoencoder 선택 실험의 수행 여부
 - 최종 API 계약
 
 ## 마지막 검증
 
+- 2026-09-22: commit `8b8d00b` 기준에서 M2·M3 artifact SHA-256 검증 후 재학습 없이 M4 공식 평가 완료
+- 2026-09-22: M4 주 임계값 0.8에서 상태 그룹과 압축기·터빈 holdout 경보 지표 및 단일 클래스 `NA` 처리 확인
+- 2026-09-22: 결정적 gzip으로 재생성한 M4 행 단위 정책 예측 SHA-256 `d21156993e179c5f0968aeada29bf8d56e62eb8c2220e93246be25ec1c2bdad8`
+- 2026-09-22: M4 구현 후 `pytest -q` 110개 테스트 통과, Ruff·포맷·`uv lock --check`·`git diff --check` 통과
 - 2026-09-22: commit `ef70ee1`의 clean 상태에서 M3 6개 후보 × 3개 시나리오 × 3개 seed validation 선택 실험 완료
 - 2026-09-22: 고정된 M3 seed 42 checkpoint와 행 랜덤 신규 fit으로 네 시나리오 test 1회 평가 완료
 - 2026-09-22: M3 상태 그룹 test `kMc`/`kMt` R² 0.999903/0.999678, 두 holdout 대상 NRMSE와 건강 방향 bias 감소 확인

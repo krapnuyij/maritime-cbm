@@ -17,8 +17,9 @@
 
 ## 현재 상태
 
-M0 프로젝트 기반 구성, M1 데이터 파이프라인, M2 scikit-learn 기준 모델과 M3 PyTorch
-비교 모델의 선택·평가를 완료했다. 다음 단계는 회귀 예측값 기반 M4 경보 정책이다.
+M0 프로젝트 기반 구성, M1 데이터 파이프라인, M2 scikit-learn 기준 모델, M3 PyTorch
+비교 모델과 M4 회귀 예측값 기반 경보 정책 평가를 완료했다. 다음 단계는 M5 API·Docker
+서비스화다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -96,6 +97,23 @@ Random Forest보다 오차가 감소했지만 holdout의 건강 방향 bias는 �
 구조를 설계했으므로 완전히 미관측인 독립 test 성능으로 주장하지 않는다. 상세 결과는
 [M3 리포트](reports/modeling/m3/)와 [모델 카드](docs/MODEL_CARD.md)에 있다.
 
+## 경보 정책 재현
+
+M4는 모델을 재학습하지 않는다. M2·M3 evaluation manifest와 저장된 test 예측의
+SHA-256을 검증하고, 상태 그룹 validation에서만 고정 오경보율 cutoff를 정한 뒤 기존 test에
+그대로 적용한다.
+
+```bash
+uv sync --locked --group eda --group modeling
+uv run --locked --group eda --group modeling python -m maritime_cbm.alerting.benchmark
+```
+
+주 임계값 0.8에서 상태 그룹 `any` Recall은 M2 0.9245, M3 0.9558이고 FPR은 각각
+0.0009, 0이다. 심한 열화 방향 holdout의 대상 Recall은 M2가 압축기 `kMc`와 터빈 `kMt`
+모두 0인 반면 M3는 각각 1.0000, 0.9316이다. 두 holdout은 정상 표본이 없는 단일 클래스이므로
+Precision·FPR·PR-AUC는 `NA`이며 실제 고장 탐지 성능으로 해석하지 않는다. 상세 결과는
+[경보 정책 리포트](reports/alerting/)와 [모델 카드](docs/MODEL_CARD.md)에 있다.
+
 ## 데이터 준비와 검증
 
 원본 데이터는 [데이터셋 안내](docs/DATASET.md)에 따라 직접 내려받아 다음 위치에 둔다.
@@ -126,10 +144,13 @@ uv run python -m maritime_cbm.data.validation /path/to/uci_cbm
 ├── data/                  # 로컬 데이터, Git 제외
 │   ├── raw/
 │   └── processed/
-├── artifacts/modeling/    # 로컬 모델·행 단위 예측, Git 제외
+├── artifacts/             # 로컬 모델·행 단위 예측, Git 제외
+│   ├── modeling/
+│   └── alerting/
 ├── docs/                  # 명세, 데이터 및 실험 문서
 ├── reports/eda/           # 재현 가능한 집계 EDA 표와 핵심 그림
 ├── reports/modeling/      # M2·M3 집계 지표와 핵심 그림
+├── reports/alerting/      # M4 경보 정책 집계 지표와 핵심 그림
 ├── src/maritime_cbm/      # 애플리케이션 패키지
 ├── tests/                 # 자동화 테스트
 ├── pyproject.toml         # 프로젝트 및 도구 설정

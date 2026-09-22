@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 
 from maritime_cbm.config import (
+    DEFAULT_ALERT_ARTIFACT_DIR,
+    DEFAULT_ALERT_REPORT_DIR,
     DEFAULT_M3_MODEL_ARTIFACT_DIR,
     DEFAULT_M3_MODEL_REPORT_DIR,
     DEFAULT_MODEL_ARTIFACT_DIR,
@@ -20,6 +22,8 @@ def test_get_settings_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MARITIME_CBM_MODEL_REPORT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_M3_MODEL_ARTIFACT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_M3_MODEL_REPORT_DIR", raising=False)
+    monkeypatch.delenv("MARITIME_CBM_ALERT_ARTIFACT_DIR", raising=False)
+    monkeypatch.delenv("MARITIME_CBM_ALERT_REPORT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_RANDOM_SEED", raising=False)
 
     settings = get_settings()
@@ -29,6 +33,8 @@ def test_get_settings_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.model_report_dir == DEFAULT_MODEL_REPORT_DIR
     assert settings.m3_model_artifact_dir == DEFAULT_M3_MODEL_ARTIFACT_DIR
     assert settings.m3_model_report_dir == DEFAULT_M3_MODEL_REPORT_DIR
+    assert settings.alert_artifact_dir == DEFAULT_ALERT_ARTIFACT_DIR
+    assert settings.alert_report_dir == DEFAULT_ALERT_REPORT_DIR
     assert settings.random_seed == DEFAULT_RANDOM_SEED
 
 
@@ -41,6 +47,8 @@ def test_get_settings_accepts_environment_overrides(
     monkeypatch.delenv("MARITIME_CBM_M3_MODEL_ARTIFACT_DIR", raising=False)
     monkeypatch.delenv("MARITIME_CBM_M3_MODEL_REPORT_DIR", raising=False)
     monkeypatch.setenv("MARITIME_CBM_RANDOM_SEED", "7")
+    monkeypatch.setenv("MARITIME_CBM_ALERT_ARTIFACT_DIR", "artifacts/test-alerting")
+    monkeypatch.setenv("MARITIME_CBM_ALERT_REPORT_DIR", "reports/test-alerting")
 
     settings = get_settings()
 
@@ -49,6 +57,8 @@ def test_get_settings_accepts_environment_overrides(
     assert settings.model_report_dir == DEFAULT_MODEL_REPORT_DIR.parent / "test-modeling"
     assert settings.m3_model_artifact_dir == settings.model_artifact_dir / "m3"
     assert settings.m3_model_report_dir == settings.model_report_dir / "m3"
+    assert settings.alert_artifact_dir == DEFAULT_ALERT_ARTIFACT_DIR.parent / "test-alerting"
+    assert settings.alert_report_dir == DEFAULT_ALERT_REPORT_DIR.parent / "test-alerting"
     assert settings.random_seed == 7
 
 
