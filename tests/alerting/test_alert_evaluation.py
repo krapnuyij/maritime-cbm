@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from maritime_cbm.alerting.benchmark import _write_deterministic_gzip_csv
 from maritime_cbm.alerting.evaluation import (
     ModelPredictionBundle,
     build_fixed_fpr_cutoffs,
@@ -174,15 +173,3 @@ def test_alert_figures_are_written(tmp_path: Path) -> None:
 
     assert len(paths) == 2
     assert all(path.is_file() and path.stat().st_size > 0 for path in paths)
-
-
-def test_row_predictions_gzip_is_deterministic_across_paths(tmp_path: Path) -> None:
-    frame = build_primary_policy_predictions(_bundles())
-    first = tmp_path / "first.csv.gz"
-    second = tmp_path / "second.csv.gz"
-
-    _write_deterministic_gzip_csv(frame, first)
-    _write_deterministic_gzip_csv(frame, second)
-
-    assert first.read_bytes() == second.read_bytes()
-    pd.testing.assert_frame_equal(pd.read_csv(first), pd.read_csv(second))

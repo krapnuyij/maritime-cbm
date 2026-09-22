@@ -14,6 +14,7 @@ import pandas as pd
 import sklearn
 import torch
 
+from maritime_cbm.artifact_io import write_deterministic_gzip_csv
 from maritime_cbm.config import get_settings
 from maritime_cbm.data.loader import compute_sha256, load_raw_dataset
 from maritime_cbm.data.splitting import build_dataset_splits, compute_split_hashes
@@ -369,7 +370,7 @@ def run_evaluation(
     comparison = build_baseline_comparison(baseline_metrics, metrics)
     holdout_diagnostics = build_holdout_diagnostics(predictions)
     metrics.to_csv(metrics_path, index=False)
-    predictions.to_csv(predictions_path, index=False, compression="gzip")
+    write_deterministic_gzip_csv(predictions, predictions_path)
     comparison.to_csv(comparison_path, index=False)
     holdout_diagnostics.to_csv(holdout_path, index=False)
     build_error_by_speed(predictions).to_csv(error_by_speed_path, index=False)
