@@ -5,10 +5,7 @@ import json
 import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from io import BytesIO
 from pathlib import Path
-
-import pandas as pd
 
 from maritime_cbm.alerting.evaluation import (
     build_fixed_fpr_cutoffs,
@@ -22,6 +19,7 @@ from maritime_cbm.alerting.reporting import (
     build_primary_model_comparison,
     write_alert_figures,
 )
+from maritime_cbm.artifact_io import write_deterministic_gzip_csv
 from maritime_cbm.config import get_settings
 from maritime_cbm.data.loader import compute_sha256, load_raw_dataset
 from maritime_cbm.data.splitting import build_dataset_splits, compute_split_hashes
@@ -32,17 +30,6 @@ from maritime_cbm.logging_config import configure_logging
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-
-def _write_deterministic_gzip_csv(frame: pd.DataFrame, path: Path) -> None:
-    """Write gzip bytes without filename or timestamp metadata."""
-    buffer = BytesIO()
-    frame.to_csv(
-        buffer,
-        index=False,
-        compression={"method": "gzip", "mtime": 0},
-    )
-    path.write_bytes(buffer.getvalue())
 
 
 def run_alert_evaluation(
@@ -87,7 +74,7 @@ def run_alert_evaluation(
     comparison.to_csv(comparison_path, index=False)
     cutoffs.to_csv(cutoffs_path, index=False)
     fixed_fpr_metrics.to_csv(fixed_fpr_path, index=False)
-    _write_deterministic_gzip_csv(row_predictions, predictions_path)
+    write_deterministic_gzip_csv(row_predictions, predictions_path)
     figure_paths = (
         write_alert_figures(sensitivity, primary, report_directory) if include_figures else ()
     )

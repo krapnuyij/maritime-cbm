@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 
+from maritime_cbm.artifact_io import write_deterministic_gzip_csv
 from maritime_cbm.config import get_settings
 from maritime_cbm.data.loader import compute_sha256, load_raw_dataset
 from maritime_cbm.data.splitting import build_dataset_splits, compute_split_hashes
@@ -203,7 +204,7 @@ def run_evaluation(
 
     build_metric_table(outcome.evaluations).to_csv(metrics_path, index=False)
     predictions = build_prediction_table(frame, outcome.evaluations)
-    predictions.to_csv(predictions_path, index=False, compression="gzip")
+    write_deterministic_gzip_csv(predictions, predictions_path)
     build_error_by_speed(predictions).to_csv(error_by_speed_path, index=False)
     build_error_by_target_state(predictions).to_csv(error_by_state_path, index=False)
     joblib.dump(outcome.primary_estimator, model_path)
