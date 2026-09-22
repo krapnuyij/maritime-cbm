@@ -1,5 +1,6 @@
 """Regression metrics and the approved state-group model selection score."""
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 
 import numpy as np
@@ -112,5 +113,43 @@ def state_group_selection_key(
         float(np.mean(nrmse_values)),
         float(max(nrmse_values)),
         complexity_rank,
+        candidate_id,
+    )
+
+
+def aggregated_state_group_selection_key(
+    metric_runs: Sequence[tuple[TargetRegressionMetrics, ...]],
+    *,
+    trainable_parameter_count: int,
+    architecture_rank: int,
+    candidate_id: str,
+) -> tuple[float, float, int, int, str]:
+    """Rank a stochastic model after averaging each target across repeated seeds."""
+    if not metric_runs:
+        raise MetricInputError("At least one metric run is required for aggregate selection")
+    if trainable_parameter_count < 0:
+        raise MetricInputError("Trainable parameter count must be non-negative")
+    if architecture_rank < 0:
+        raise MetricInputError("Architecture rank must be non-negative")
+
+    nrmse_by_target = {target: [] for target in TARGET_COLUMNS}
+    for metrics in metric_runs:
+        by_target = {metric.target: metric for metric in metrics}
+        if len(by_target) != len(metrics) or set(by_target) != set(TARGET_COLUMNS):
+            raise MetricInputError(
+                f"Expected one metric per target {TARGET_COLUMNS}, found "
+                f"{tuple(metric.target for metric in metrics)}"
+            )
+        for target in TARGET_COLUMNS:
+            nrmse_by_target[target].append(by_target[target].nrmse)
+
+    target_means = tuple(
+        float(np.mean(nrmse_by_target[target], dtype=np.float64)) for target in TARGET_COLUMNS
+    )
+    return (
+        float(np.mean(target_means, dtype=np.float64)),
+        float(max(target_means)),
+        trainable_parameter_count,
+        architecture_rank,
         candidate_id,
     )
