@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M4. 회귀 예측값 기반 경보 정책
+M5. 서비스화
 
 ## 완료
 
@@ -29,6 +29,10 @@ M4. 회귀 예측값 기반 경보 정책
 - 세 seed 상태 그룹 validation으로 속도 중심화 선형 잔차 MLP 선택
 - 고정 checkpoint를 네 시나리오 test에서 한 번 평가하고 M2 기준 모델과 비교
 - 상태 그룹과 심한 열화 방향 holdout에서 Random Forest 대비 NRMSE 감소 확인
+- 회귀 예측값 기반 열화도와 `normal`·`watch`·`alert` 정책 모듈 구현
+- 단일 클래스 안전 경보 지표와 validation 고정 FPR cutoff 구현
+- M2·M3 artifact 검증 후 재학습 없이 M4 경보 정책 공식 평가 완료
+- M3가 M2의 심한 열화 방향 경보 누락을 크게 줄이는 결과 확인
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -38,7 +42,7 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 진행 중
 
-- M4 회귀 예측값 기반 경보 정책과 평가 Pipeline 구현 준비
+- M5 배포 모델·API 계약과 Docker 서비스화 계획 수립 준비
 
 ## 진행 관리 원칙
 
@@ -50,10 +54,10 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 다음 작업
 
-1. 정규화 열화도와 `normal`·`watch`·`alert` 정책 모듈 구현
-2. 단일 클래스 안전 지표와 validation 고정 FPR cutoff 구현
-3. M2·M3 artifact 검증과 경보 비교 리포트 Pipeline 구현
-4. 공식 로컬 평가 후 `MODEL_CARD.md`·실험 기록·README 갱신
+1. M4 결과를 근거로 M5 배포 모델과 API 입력·출력 계약 확정
+2. FastAPI 추론·경보 API와 입력 검증 구현
+3. Docker 실행 환경과 smoke test 구성
+4. 고정 조건의 API 지연시간·메모리 측정과 포트폴리오 문서 최종화
 
 ## 확정된 결정
 
@@ -154,6 +158,12 @@ M4. 회귀 예측값 기반 경보 정책
 - 타임스탬프가 없어 지속 시간·debounce·hysteresis 경보 정책은 평가하지 않는다.
 - 실제 정상 운항 라벨과 정상 모집단의 근거가 없어 M4에서 Isolation Forest와 Autoencoder는 수행하지 않는다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
+- M4 주 임계값 0.8의 상태 그룹 `any` Recall/FPR은 M2 0.924501/0.000918, M3 0.955840/0이다.
+- 압축기 holdout `kMc` Recall은 M2 0, M3 1.0이고 터빈 holdout `kMt` Recall은 M2 0, M3 0.931590이다.
+- 압축기·터빈 holdout의 대상 reference는 모두 양성이므로 Precision·F1·FPR·PR-AUC는 `NA`로 기록한다.
+- 상태 그룹 validation 목표 FPR 1% cutoff를 적용한 상태 그룹 test `any` Recall/FPR은 M2 0.981481/0.004591, M3 0.998575/0.007346이다.
+- 목표 FPR은 validation 제약이며 test realized FPR을 보장하지 않는다. 목표 5%에서 M2 상태 그룹 test `any` FPR은 0.058770이었다.
+- M4 결과는 M3를 유력한 M5 배포 후보로 뒷받침하지만 배포 모델과 API 계약은 M5에서 확정한다.
 - 원본 데이터는 Git에 커밋하지 않는다.
 - 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
@@ -164,6 +174,10 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 마지막 검증
 
+- 2026-09-22: commit `8b8d00b` 기준에서 M2·M3 artifact SHA-256 검증 후 재학습 없이 M4 공식 평가 완료
+- 2026-09-22: M4 주 임계값 0.8에서 상태 그룹과 압축기·터빈 holdout 경보 지표 및 단일 클래스 `NA` 처리 확인
+- 2026-09-22: 결정적 gzip으로 재생성한 M4 행 단위 정책 예측 SHA-256 `d21156993e179c5f0968aeada29bf8d56e62eb8c2220e93246be25ec1c2bdad8`
+- 2026-09-22: M4 구현 후 `pytest -q` 110개 테스트 통과, Ruff·포맷·`uv lock --check`·`git diff --check` 통과
 - 2026-09-22: commit `ef70ee1`의 clean 상태에서 M3 6개 후보 × 3개 시나리오 × 3개 seed validation 선택 실험 완료
 - 2026-09-22: 고정된 M3 seed 42 checkpoint와 행 랜덤 신규 fit으로 네 시나리오 test 1회 평가 완료
 - 2026-09-22: M3 상태 그룹 test `kMc`/`kMt` R² 0.999903/0.999678, 두 holdout 대상 NRMSE와 건강 방향 bias 감소 확인

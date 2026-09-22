@@ -21,6 +21,7 @@
 | EXP-20260922-002 | 2026-09-22 | 고정 기준 모델 최종 평가 | `DATASET.md@129ae3c` | 네 시나리오 validation·test | Random Forest | 완료 | [상세](#exp-20260922-002--고정-기준-모델-최종-평가) |
 | EXP-20260922-003 | 2026-09-22 | validation 기반 M3 모델 선택 | `DATASET.md@ef70ee1` | 상태 그룹·두 holdout validation | 6개 PyTorch 후보 × 3 seed | 완료 | [상세](#exp-20260922-003--validation-기반-m3-모델-선택) |
 | EXP-20260922-004 | 2026-09-22 | 고정 M3 모델 최종 평가 | `DATASET.md@ef70ee1` | 네 시나리오 validation·test | 선형 잔차 MLP | 완료 | [상세](#exp-20260922-004--고정-m3-모델-최종-평가) |
+| EXP-20260922-005 | 2026-09-22 | 회귀 예측값 기반 경보 정책 평가 | `DATASET.md@8b8d00b` | 상태 그룹 validation·네 test | M2 Random Forest·M3 선형 잔차 MLP | 완료 | [상세](#exp-20260922-005--회귀-예측값-기반-경보-정책-평가) |
 
 ## EXP-20260922-001 — validation 기반 기준 모델 선택
 
@@ -264,6 +265,78 @@
 M2 holdout 결과를 본 뒤 M3 구조를 설계했으므로 두 holdout 비교는 완전히 미관측인 독립
 test가 아니라 사전에 고정한 벤치마크의 탐색적 비교다. M3는 selection checkpoint를 최종
 평가에 재사용했고 M2는 네 시나리오를 평가 단계에서 다시 학습했다.
+
+## EXP-20260922-005 — 회귀 예측값 기반 경보 정책 평가
+
+### 실행 정보
+
+- 상태: 완료
+- 실행 일시: 2026-09-22 18:40 KST
+- Git commit: `8b8d00b`
+- 작업 트리 상태: dirty
+- 관련 미커밋 파일: 첫 실행에서 생성한 `reports/alerting/`과 결과 문서화 중인 README·문서 3개, 코드 변경 없음
+- 실행 명령: `uv run --locked --group eda --group modeling python -m maritime_cbm.alerting.benchmark`
+- 실험 목적: 고정된 M2·M3 회귀 예측으로 PoC 경보 정책의 민감도와 누락·오경보 trade-off 평가
+
+### 데이터와 upstream artifact
+
+- 데이터셋: UCI `Condition Based Maintenance of Naval Propulsion Plants`, 11,934행·18열
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `8b8d00b`
+- 분할: 상태 그룹 validation과 행 랜덤·상태 그룹·압축기·터빈 holdout test
+- M2 모델 SHA-256: `0c59bc9110ddd31965212bc9d46635071309ca50d4f68edbd76bffc0cd3a034a`
+- M2 test 예측 SHA-256: `6c3ba563d65d539daba5697a4e7fc321134127c5666d899941b3df9b78b69417`
+- M3 checkpoint SHA-256: `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`
+- M3 test 예측 SHA-256: `d1632e09d1db378f0e6a44ec185ac916344234101c2da37dbd094796ccef10c7`
+- 처리 방식: upstream manifest·분할·런타임·artifact 해시 검증 후 재학습 없이 기존 test 예측 재사용
+
+### 설정과 실행 환경
+
+- 정책: 열화도 clipping 없음, `watch` 0.5, 주 `alert` 0.8
+- 민감도 임계값: 0.5·0.6·0.7·0.8·0.9
+- 고정 오경보율 목표: 상태 그룹 validation FPR 1%·5%
+- random seed: 42
+- Python 3.13.13, NumPy 2.5.3, pandas 3.0.6, scikit-learn 1.9.1, PyTorch 2.14.0, joblib 1.6.0
+- 운영체제와 아키텍처: macOS 26.5.1 arm64
+- 모델 학습: 수행하지 않음
+
+### 주 임계값 0.8 결과
+
+| 시나리오·채널 | M2 Recall | M2 FPR | M3 Recall | M3 FPR |
+|---|---:|---:|---:|---:|
+| 상태 그룹 · `kMc` | 0.944444 | 0.000000 | 0.962963 | 0.000000 |
+| 상태 그룹 · `kMt` | 0.891975 | 0.000682 | 0.944444 | 0.000000 |
+| 상태 그룹 · `any` | 0.924501 | 0.000918 | 0.955840 | 0.000000 |
+| 압축기 holdout · `kMc` | 0.000000 | NA | 1.000000 | NA |
+| 터빈 holdout · `kMt` | 0.000000 | NA | 0.931590 | NA |
+
+- 상태 그룹 `any` F1/PR-AUC: M2 0.960059/0.998252, M3 0.977422/0.999947
+- 압축기·터빈 holdout 대상은 모두 양성이므로 Precision·F1·FPR·PR-AUC는 `NA`
+- M2 holdout 대상 FN: 압축기 1,170/1,170, 터빈 2,295/2,295
+- M3 holdout 대상 FN: 압축기 0/1,170, 터빈 157/2,295
+
+### validation 고정 오경보율 결과
+
+| 모델 | 목표 FPR | validation `any` cutoff | 상태 그룹 test Recall | 상태 그룹 test FPR |
+|---|---:|---:|---:|---:|
+| M2 Random Forest | 0.01 | 0.785200 | 0.981481 | 0.004591 |
+| M2 Random Forest | 0.05 | 0.758533 | 0.992877 | 0.058770 |
+| M3 선형 잔차 MLP | 0.01 | 0.780506 | 0.998575 | 0.007346 |
+| M3 선형 잔차 MLP | 0.05 | 0.779096 | 0.998575 | 0.017447 |
+
+목표 FPR은 validation 제약이며 test realized FPR을 보장하지 않는다. 정상 표본이 없는
+holdout에서는 고정 cutoff Recall만 보고하고 FPR은 `NA`로 기록했다.
+
+### 산출물과 결론
+
+- 행 단위 정책 예측: `artifacts/alerting/policy_predictions.csv.gz`
+- 행 단위 예측 SHA-256: `d21156993e179c5f0968aeada29bf8d56e62eb8c2220e93246be25ec1c2bdad8`
+- 결정성 확인: 다른 출력 경로에서 재실행한 gzip 바이트·SHA-256과 집계 CSV 5개가 모두 일치
+- manifest: `artifacts/alerting/evaluation.json`
+- 집계 지표와 그림: `reports/alerting/`
+- 결과 요약: M3는 상태 그룹 성능을 개선하고 M2의 심한 열화 방향 경보 완전 누락을 크게 줄임
+- 한계: reference는 실제 고장이 아닌 simulator 상태 계수 기반이며 두 holdout 대상은 단일 클래스
+- 비지도 이상탐지: 근거 있는 정상 모집단이 없어 Isolation Forest·Autoencoder를 수행하지 않음
+- 다음 결정: M5에서 배포 모델과 API 계약을 확정하고 실제 지연시간·메모리를 측정
 
 ## 실험별 기록 양식
 
