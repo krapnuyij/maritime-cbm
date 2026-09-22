@@ -38,7 +38,7 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 진행 중
 
-- M4 회귀 예측값 기반 경보 정책의 임계값 정의·검증 방법 계획 수립 준비
+- M4 회귀 예측값 기반 경보 정책과 평가 Pipeline 구현 준비
 
 ## 진행 관리 원칙
 
@@ -50,10 +50,10 @@ M4. 회귀 예측값 기반 경보 정책
 
 ## 다음 작업
 
-1. M3 결과·문서 변경 검토와 커밋 여부 결정
-2. M3 브랜치 CI 검증과 PR 준비
-3. M4 경보 정책의 임계값 정의·검증 계획 수립
-4. 실제 고장 라벨 부재와 holdout bias를 반영한 경보 평가 설계
+1. 정규화 열화도와 `normal`·`watch`·`alert` 정책 모듈 구현
+2. 단일 클래스 안전 지표와 validation 고정 FPR cutoff 구현
+3. M2·M3 artifact 검증과 경보 비교 리포트 Pipeline 구현
+4. 공식 로컬 평가 후 `MODEL_CARD.md`·실험 기록·README 갱신
 
 ## 확정된 결정
 
@@ -137,16 +137,29 @@ M4. 회귀 예측값 기반 경보 정책
 - M3 압축기 holdout `kMc` NRMSE는 0.020581, 터빈 holdout `kMt` NRMSE는 0.055401이며 M2보다 각각 90.2%, 84.9% 낮다.
 - M3 holdout 대상 bias는 압축기 `kMc` +0.000695, 터빈 `kMt` +0.000996으로 감소했지만 건강 방향 과대 추정은 남아 있다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
+- M4 열화도는 `kMc`에 `(1-kMc)/0.050`, `kMt`에 `(1-kMt)/0.025`를 사용하고 두 값의 최댓값을 전체 열화도로 사용한다.
+- 회귀 예측의 공식 범위 이탈을 감추지 않기 위해 M4 열화도는 clipping하지 않는다.
+- M4 상태는 열화도 0.5 미만 `normal`, 0.5 이상 0.8 미만 `watch`, 0.8 이상 `alert`로 정의한다.
+- 주 경보 임계값 0.8은 `kMc ≤ 0.960`, `kMt ≤ 0.980`에 대응하는 PoC 정책 시나리오이며 공식 고장 임계값이 아니다.
+- 임계값 0.5·0.6·0.7·0.8·0.9의 민감도를 비교하되 test 결과로 임계값을 조정하지 않는다.
+- M4는 M2·M3에서 저장한 test 예측을 SHA-256 검증 후 재사용하고 모델을 재학습하거나 test 예측을 다시 생성하지 않는다.
+- 경보 평가 채널은 `kMc`, `kMt`, 두 상태 중 하나라도 경보인 `any`로 구성한다.
+- 기본 경보 지표는 TP·FP·TN·FN, Precision, Recall, F1, FPR, miss rate, Average Precision 기반 PR-AUC와 reference prevalence다.
+- reference가 단일 클래스인 경우 PR-AUC를 계산하지 않고 클래스 구성에 따라 정의 가능한 지표만 보고하며 나머지는 `NA`와 사유를 기록한다.
+- 전체 양성에서는 Recall·FN·miss rate만, 전체 음성에서는 FP·TN·FPR만 경보 성능 지표로 해석한다.
+- 고정 오경보율 cutoff는 상태 그룹 validation에서 목표 FPR 1%·5% 이하 조건으로 정하고 test·holdout에 그대로 적용한다.
+- holdout에 정상 표본이 없으면 고정 cutoff Recall은 보고하되 realized FPR은 `NA`로 기록한다.
+- M4 reference alert는 simulator 상태 계수에서 파생한 정책 상태이며 실제 고장 라벨이나 실제 고장 탐지 결과가 아니다.
+- M4는 기존 M2·M3 test를 활용한 downstream 분석이므로 새로운 독립 test라고 주장하지 않는다.
+- 타임스탬프가 없어 지속 시간·debounce·hysteresis 경보 정책은 평가하지 않는다.
+- 실제 정상 운항 라벨과 정상 모집단의 근거가 없어 M4에서 Isolation Forest와 Autoencoder는 수행하지 않는다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
-- Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
 - 원본 데이터는 Git에 커밋하지 않는다.
 - 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
 
 ## 미확정 사항
 
-- 경보 임계값의 정의와 검증 방법
-- Isolation Forest 또는 Autoencoder 선택 실험의 수행 여부
 - 최종 API 계약
 
 ## 마지막 검증

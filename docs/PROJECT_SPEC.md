@@ -127,12 +127,29 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 
 ### M4. 경보 정책
 
-- 회귀 예측값 기반 경보 상태 정의
-- 경보 임계값 후보와 선택 근거 기록
-- 임계값 변화에 따른 민감도와 한계 분석
-- 정상 범위의 근거를 확보한 경우에만 Isolation Forest 또는 Autoencoder 선택 실험
-- 실제 고장 라벨과 공식 경보 임계값 부재에 따른 해석 제한 명시
-- 경보 정책, 임계값 근거와 해석 제한을 `docs/MODEL_CARD.md`에 갱신
+- `kMc`, `kMt` 회귀 예측값을 각 simulator 범위로 정규화한 열화도와 전체 최대 열화도 계산
+- 예측 범위 이탈을 오류 분석에 유지하기 위해 열화도를 clipping하지 않음
+- 열화도 0.5 미만은 `normal`, 0.5 이상 0.8 미만은 `watch`, 0.8 이상은 `alert`로 정의
+- 주 경보 임계값 0.8은 `kMc ≤ 0.960`, `kMt ≤ 0.980`에 대응하며 공식 고장 기준이 아닌
+  simulator 열화 범위 하위 20%의 PoC 정책 시나리오로 해석
+- 열화도 임계값 0.5·0.6·0.7·0.8·0.9를 사전 고정해 민감도를 분석하고 test 결과로 조정하지 않음
+- M2 Random Forest와 M3 선형 잔차 MLP의 기존 test 예측과 evaluation manifest SHA-256을
+  재사용하며 모델을 다시 학습하거나 test 예측을 재조정하지 않음
+- `kMc`, `kMt`, 두 상태 중 하나라도 경보인 `any` 채널별 TP·FP·TN·FN, Precision,
+  Recall, F1, FPR, miss rate, Average Precision 기반 PR-AUC와 reference prevalence 보고
+- reference가 단일 클래스이면 클래스 판별력을 나타낼 수 없는 지표를 `NA`와 명시적 사유로 기록
+  - 전체 양성: PR-AUC·Precision·F1·FPR은 `NA`, Recall·FN·miss rate만 보고
+  - 전체 음성: PR-AUC·Precision·Recall·F1은 `NA`, FP·TN·FPR만 보고
+  - scikit-learn 지표 호출 전에 고유 클래스 수를 검사해 인공적인 PR-AUC 1.0·0.0을 차단
+- 상태 그룹 validation에서 모델·채널별 목표 FPR 1%·5% 이하인 cutoff 중 Recall이 가장 높은
+  값을 선택하고, 동점은 낮은 FPR·높은 Precision·높은 cutoff 순으로 결정
+- validation에서 고정한 cutoff를 test와 holdout에 그대로 적용하고, 정상 표본이 없는
+  holdout에서는 결과 Recall을 보고하되 realized FPR은 `NA`로 기록
+- M4 reference alert는 실제 고장 라벨이 아니라 simulator 열화 상태 계수에서 파생한 정책 상태이며,
+  결과를 실제 고장 탐지 성능이나 새로운 독립 test로 해석하지 않음
+- 타임스탬프가 없으므로 지속 시간·debounce·hysteresis 정책은 평가하지 않음
+- 실제 정상 운항 라벨과 정상 모집단 근거가 없어 Isolation Forest와 Autoencoder 실험은 수행하지 않음
+- 경보 정책, 임계값 근거, 민감도와 해석 제한을 `docs/MODEL_CARD.md`에 갱신
 
 ### M5. 서비스화
 
