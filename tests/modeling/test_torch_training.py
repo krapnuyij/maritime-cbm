@@ -169,6 +169,28 @@ def test_checkpoint_round_trip_preserves_predictions(tmp_path: Path) -> None:
     assert np.array_equal(actual, expected)
     assert loaded.metadata == {"scenario": "state_group"}
     assert loaded.trainable_parameter_count == result.trainable_parameter_count
+    assert loaded.torch_version == str(torch.__version__)
+    assert loaded.training_seconds == pytest.approx(result.training_seconds)
+
+
+def test_checkpoint_rejects_non_primitive_metadata(tmp_path: Path) -> None:
+    features, targets = _regression_data()
+    result = fit_torch_regressor(
+        features.iloc[:36],
+        targets[:36],
+        features.iloc[36:],
+        targets[36:],
+        candidate=build_torch_candidate_specs()[0],
+        seed=42,
+        config=_short_config(),
+    )
+
+    with pytest.raises(TypeError, match="unsupported type ndarray"):
+        save_torch_checkpoint(
+            result,
+            tmp_path / "unsafe.pt",
+            metadata={"array": np.asarray([1.0])},
+        )
 
 
 def test_mps_preference_falls_back_when_backend_is_unavailable(

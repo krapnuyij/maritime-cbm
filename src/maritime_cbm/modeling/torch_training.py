@@ -556,10 +556,31 @@ class LoadedTorchCheckpoint:
     regressor: FittedTorchRegressor
     training_config: TrainingConfig
     seed: int
+    requested_device: str
     resolved_device: str
+    fallback_reason: str | None
     best_epoch: int
+    training_seconds: float
     trainable_parameter_count: int
+    torch_version: str
     metadata: dict[str, object]
+
+
+def _validate_checkpoint_value(value: object, *, path: str) -> None:
+    """Reject metadata that cannot be loaded by PyTorch's weights-only unpickler."""
+    if value is None or isinstance(value, (bool, int, float, str, torch.Tensor)):
+        return
+    if isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            _validate_checkpoint_value(item, path=f"{path}[{index}]")
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise TypeError(f"Checkpoint metadata key at {path} must be a string")
+            _validate_checkpoint_value(item, path=f"{path}.{key}")
+        return
+    raise TypeError(f"Checkpoint metadata at {path} has unsupported type {type(value).__name__}")
 
 
 def save_torch_checkpoint(
@@ -569,6 +590,8 @@ def save_torch_checkpoint(
     metadata: dict[str, object] | None = None,
 ) -> None:
     """Save tensors and primitive metadata for weights-only loading."""
+    resolved_metadata = {} if metadata is None else dict(metadata)
+    _validate_checkpoint_value(resolved_metadata, path="metadata")
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": CHECKPOINT_SCHEMA_VERSION,
@@ -579,6 +602,7 @@ def save_torch_checkpoint(
         "resolved_device": result.resolved_device,
         "fallback_reason": result.fallback_reason,
         "best_epoch": result.best_epoch,
+        "training_seconds": result.training_seconds,
         "trainable_parameter_count": result.trainable_parameter_count,
         "preprocessor": result.regressor.preprocessor.to_payload(),
         "model_state_dict": {
@@ -586,7 +610,7 @@ def save_torch_checkpoint(
             for name, tensor in result.regressor.model.state_dict().items()
         },
         "torch_version": str(torch.__version__),
-        "metadata": {} if metadata is None else dict(metadata),
+        "metadata": resolved_metadata,
     }
     torch.save(payload, path)
 
@@ -621,12 +645,22 @@ def load_torch_checkpoint(path: Path) -> LoadedTorchCheckpoint:
         raise ValueError("Torch checkpoint parameter count does not match the candidate")
     seed = payload.get("seed")
     best_epoch = payload.get("best_epoch")
+    requested_device = payload.get("requested_device")
     resolved_device = payload.get("resolved_device")
+    fallback_reason = payload.get("fallback_reason")
+    training_seconds = payload.get("training_seconds")
+    torch_version = payload.get("torch_version")
     metadata = payload.get("metadata")
     if not isinstance(seed, int) or not isinstance(best_epoch, int):
         raise ValueError("Torch checkpoint training metadata is invalid")
-    if not isinstance(resolved_device, str) or not isinstance(metadata, dict):
+    if not isinstance(requested_device, str) or not isinstance(resolved_device, str):
         raise ValueError("Torch checkpoint environment metadata is invalid")
+    if fallback_reason is not None and not isinstance(fallback_reason, str):
+        raise ValueError("Torch checkpoint fallback metadata is invalid")
+    if not isinstance(training_seconds, float | int) or training_seconds < 0:
+        raise ValueError("Torch checkpoint training duration is invalid")
+    if not isinstance(torch_version, str) or not isinstance(metadata, dict):
+        raise ValueError("Torch checkpoint runtime metadata is invalid")
 
     return LoadedTorchCheckpoint(
         regressor=FittedTorchRegressor(
@@ -636,8 +670,12 @@ def load_torch_checkpoint(path: Path) -> LoadedTorchCheckpoint:
         ),
         training_config=training_config,
         seed=seed,
+        requested_device=requested_device,
         resolved_device=resolved_device,
+        fallback_reason=fallback_reason,
         best_epoch=best_epoch,
+        training_seconds=float(training_seconds),
         trainable_parameter_count=parameter_count,
+        torch_version=torch_version,
         metadata=metadata,
     )
