@@ -3,13 +3,17 @@
 ## 모델 개요
 
 - 모델 ID: `m2-random-forest-baseline-v1`
-- 상태: M2 기준 모델
+- 상태: M2 기준 모델과 M3 비교 모델 평가 완료
 - 구현체: scikit-learn 1.9.1 `RandomForestRegressor`
 - 목적: 정상상태 시뮬레이션 센서값에서 `kMc`, `kMt` 열화 상태 계수를 동시에 추정
 - 기준 Git commit: `129ae3c`
 
 이 모델은 실제 선박 고장진단 모델이 아니다. 실제 고장 라벨, 타임스탬프와 공식 경보
 임계값이 없는 공개 시뮬레이션 데이터로 만든 PoC 기준 모델이다.
+
+M3 비교 모델 ID는 `m3-linear-residual-mlp-v1`이며 PyTorch 2.14.0으로 구현했다. M3 결과가
+M2 배포 후보를 자동 교체하지 않으며, 최종 배포 모델 선택은 M4·M5 요구사항과 함께 별도로
+결정한다.
 
 ## 데이터와 입력
 
@@ -95,6 +99,61 @@ validation은 선택 진단이고 holdout test는 고정 모델의 최종 강건
   분석해야 한다.
 - 직렬화한 모델이 약 253MB이므로 M5 서비스화 전에 압축, 메모리와 지연시간을 측정하고
   배포 artifact 정책을 결정해야 한다.
+
+## M3 PyTorch 비교 모델
+
+M3는 Random Forest의 격자 내부 성능과 심한 열화 방향 외삽 포화를 보완할 수 있는지
+확인하기 위한 비교 실험이다. 원시 입력 MLP, 속도 중심화 MLP와 속도 중심화 선형 잔차
+MLP의 6개 후보를 세 seed로 반복 평가했다. 상태 그룹 validation의 대상별 seed 평균
+NRMSE만으로 다음 모델을 선택했다.
+
+```text
+architecture=linear_residual_mlp
+preprocessing=speed_centered
+hidden_sizes=(128, 64)
+trainable_parameters=10,076
+optimizer=AdamW(lr=1e-3, weight_decay=1e-4)
+batch_size=256
+```
+
+선형 경로에 0 초기화한 비선형 잔차 경로를 더하며, ReLU 은닉층과 clipping 없는 선형
+출력을 사용한다. 입력과 target scaler, 속도별 중심화 통계는 각 시나리오 train에만 fit했다.
+공식 실험은 CPU·float32로 수행했고 최대 500 epoch, 최소 50 epoch, patience 40으로
+early stopping한 best checkpoint를 복원했다.
+
+선택 모델의 세 seed 상태 그룹 validation 평균 NRMSE는 `kMc` 0.002866, `kMt`
+0.004659이다. 최종 test 결과는 다음과 같다.
+
+| 시나리오 | 대상 | MAE | RMSE | R² | NRMSE |
+|---|---|---:|---:|---:|---:|
+| 행 랜덤 | `kMc` | 0.000107 | 0.000158 | 0.999882 | 0.003153 |
+| 행 랜덤 | `kMt` | 0.000081 | 0.000117 | 0.999757 | 0.004661 |
+| 상태 그룹 | `kMc` | 0.000100 | 0.000140 | 0.999903 | 0.002793 |
+| 상태 그룹 | `kMt` | 0.000085 | 0.000126 | 0.999678 | 0.005022 |
+| 압축기 holdout | `kMc` | 0.000811 | 0.001029 | 0.470539 | 0.020581 |
+| 압축기 holdout | `kMt` | 0.000441 | 0.000551 | 0.994602 | 0.022042 |
+| 터빈 holdout | `kMc` | 0.001429 | 0.001763 | 0.985648 | 0.035268 |
+| 터빈 holdout | `kMt` | 0.001237 | 0.001385 | 0.040868 | 0.055401 |
+
+M2 대비 상태 그룹 NRMSE는 `kMc` 82.8%, `kMt` 78.8% 감소했고, 강건성 평가 대상인
+압축기 `kMc`와 터빈 `kMt` NRMSE도 각각 90.2%, 84.9% 감소했다. 두 holdout 대상의
+bias는 `+0.000695`, `+0.000996`으로 줄었지만 여전히 실제보다 건강하게 추정하는 방향이다.
+좁은 holdout 범위의 R²는 보조 지표로만 해석한다.
+
+M3 상태 그룹·두 holdout은 selection 단계에서 train으로 학습하고 validation으로 early
+stopping한 seed 42 checkpoint를 test에서 처음 평가했다. 행 랜덤만 최종 평가 단계에서
+새로 학습했다. 이는 네 시나리오를 평가 단계에서 다시 학습한 M2와 절차가 다르지만 test
+누수는 없다.
+
+M2 holdout 결과를 확인한 뒤 M3 구조를 설계했으므로 holdout 개선은 완전히 미관측인 독립
+test 성능이 아니라 사전에 고정한 벤치마크의 탐색적 비교다. 시뮬레이션과 실제 선박 간
+domain gap, 미관측 속도와 실제 고장 상태는 여전히 검증하지 않았다.
+
+M3 checkpoint는 `artifacts/modeling/m3/`에만 저장하고 Git에 포함하지 않는다. 기본 상태
+그룹 checkpoint의 SHA-256은
+`cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`이다. 재현 명령과
+추적 산출물은 [`reports/modeling/m3/`](../reports/modeling/m3/)에 있다. checkpoint 재로드
+예측과 저장 CSV의 최대 절대 차이는 `1.11e-16`이었다.
 
 ## 재현성과 산출물
 

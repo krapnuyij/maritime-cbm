@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M3. PyTorch 모델
+M4. 회귀 예측값 기반 경보 정책
 
 ## 완료
 
@@ -25,6 +25,10 @@ M3. PyTorch 모델
 - 17개 후보를 validation에서 비교하고 상태 그룹 NRMSE 기준 최종 Random Forest 선택
 - 고정된 최종 모델을 네 시나리오 test에서 한 번 평가하고 외삽 포화 확인
 - 집계 지표·오류 분석 그림, 실험 기록과 `MODEL_CARD.md` 작성
+- PyTorch 2.14 기반 6개 신경망 후보와 결정적 CPU 학습·checkpoint Pipeline 구현
+- 세 seed 상태 그룹 validation으로 속도 중심화 선형 잔차 MLP 선택
+- 고정 checkpoint를 네 시나리오 test에서 한 번 평가하고 M2 기준 모델과 비교
+- 상태 그룹과 심한 열화 방향 holdout에서 Random Forest 대비 NRMSE 감소 확인
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -34,7 +38,7 @@ M3. PyTorch 모델
 
 ## 진행 중
 
-- M3 PyTorch 비교 모델의 확정된 구현·평가 절차 문서화 및 검토
+- M4 회귀 예측값 기반 경보 정책의 임계값 정의·검증 방법 계획 수립 준비
 
 ## 진행 관리 원칙
 
@@ -46,11 +50,10 @@ M3. PyTorch 모델
 
 ## 다음 작업
 
-1. M3 구현·평가 절차 문서 변경 검토와 첫 커밋 여부 결정
-2. PyTorch CPU 의존성, uv lock과 Linux CI 환경 구성
-3. 신경망 구조, 전처리, 결정적 학습과 checkpoint 모듈 구현
-4. validation 전용 선택과 고정 후보 최종 평가·비교 리포트 구현
-5. 공식 CPU 실험 후 과적합·외삽 한계를 분석하고 `docs/MODEL_CARD.md` 갱신
+1. M3 결과·문서 변경 검토와 커밋 여부 결정
+2. M3 브랜치 CI 검증과 PR 준비
+3. M4 경보 정책의 임계값 정의·검증 계획 수립
+4. 실제 고장 라벨 부재와 holdout bias를 반영한 경보 평가 설계
 
 ## 확정된 결정
 
@@ -128,11 +131,16 @@ M3. PyTorch 모델
 - M3 checkpoint·manifest·행 단위 예측은 `artifacts/modeling/m3/`에 저장하고 집계 CSV와 핵심 그림만 `reports/modeling/m3/`에 커밋한다.
 - M3의 외삽 보완 여부는 두 holdout 대상의 NRMSE와 절대 bias가 모두 Random Forest보다 낮은지로 해석하되 모델 선택 기준으로 사용하지 않는다.
 - M2 holdout test를 확인한 뒤 M3 구조를 설계했으므로 M3 holdout 결과를 완전히 미관측인 독립 test가 아닌 사전 고정한 벤치마크의 탐색적 비교로 표현한다.
+- M3 최종 모델은 `linear_residual_mlp_speed_centered_hidden_128_64`이며 trainable parameter는 10,076개다.
+- M3 선택 모델의 세 seed 상태 그룹 validation 평균 NRMSE는 `kMc` 0.002866, `kMt` 0.004659이다.
+- M3 상태 그룹 test NRMSE는 `kMc` 0.002793, `kMt` 0.005022이며 M2보다 각각 82.8%, 78.8% 낮다.
+- M3 압축기 holdout `kMc` NRMSE는 0.020581, 터빈 holdout `kMt` NRMSE는 0.055401이며 M2보다 각각 90.2%, 84.9% 낮다.
+- M3 holdout 대상 bias는 압축기 `kMc` +0.000695, 터빈 `kMt` +0.000996으로 감소했지만 건강 방향 과대 추정은 남아 있다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
 - Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
 - 원본 데이터는 Git에 커밋하지 않는다.
-- 기준 모델 이후 PyTorch 모델을 구현한다.
+- 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
 
 ## 미확정 사항
@@ -143,6 +151,11 @@ M3. PyTorch 모델
 
 ## 마지막 검증
 
+- 2026-09-22: commit `ef70ee1`의 clean 상태에서 M3 6개 후보 × 3개 시나리오 × 3개 seed validation 선택 실험 완료
+- 2026-09-22: 고정된 M3 seed 42 checkpoint와 행 랜덤 신규 fit으로 네 시나리오 test 1회 평가 완료
+- 2026-09-22: M3 상태 그룹 test `kMc`/`kMt` R² 0.999903/0.999678, 두 holdout 대상 NRMSE와 건강 방향 bias 감소 확인
+- 2026-09-22: M3 상태 그룹 checkpoint 재로드 예측과 저장 CSV 최대 절대 차이 `1.11e-16`
+- 2026-09-22: M3 구현 후 `pytest -q` 90개 테스트 통과, Ruff·포맷·`uv lock --check`·`git diff --check` 통과
 - 2026-09-22: commit `129ae3c`의 clean 상태에서 validation 전용 17개 후보 선택 실험 완료
 - 2026-09-22: 고정 Random Forest로 행 랜덤·상태 그룹·압축기·터빈 holdout test 1회 평가 완료
 - 2026-09-22: 상태 그룹 test `kMc`/`kMt` R² 0.996720/0.992838, holdout 외삽 포화와 건강 방향 bias 확인
