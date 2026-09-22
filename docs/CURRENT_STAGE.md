@@ -34,7 +34,7 @@ M3. PyTorch 모델
 
 ## 진행 중
 
-- M3 PyTorch 모델 구현 계획 수립 준비
+- M3 PyTorch 비교 모델의 확정된 구현·평가 절차 문서화 및 검토
 
 ## 진행 관리 원칙
 
@@ -46,10 +46,11 @@ M3. PyTorch 모델
 
 ## 다음 작업
 
-1. M3 소형 MLP 구현·평가 계획 수립 및 승인
-2. M2와 동일한 입력·분할·지표를 사용하는 PyTorch 학습 Pipeline 구현
-3. 기준 Random Forest와 상태 그룹·holdout 성능 비교
-4. 과적합과 외삽 한계를 분석하고 `docs/MODEL_CARD.md` 갱신
+1. M3 구현·평가 절차 문서 변경 검토와 첫 커밋 여부 결정
+2. PyTorch CPU 의존성, uv lock과 Linux CI 환경 구성
+3. 신경망 구조, 전처리, 결정적 학습과 checkpoint 모듈 구현
+4. validation 전용 선택과 고정 후보 최종 평가·비교 리포트 구현
+5. 공식 CPU 실험 후 과적합·외삽 한계를 분석하고 `docs/MODEL_CARD.md` 갱신
 
 ## 확정된 결정
 
@@ -106,6 +107,27 @@ M3. PyTorch 모델
 - 압축기 holdout test `kMc` NRMSE는 0.209780, 터빈 holdout test `kMt` NRMSE는 0.366661로 심한 열화 방향 외삽 성능이 크게 저하된다.
 - holdout 대상의 건강 방향 bias는 압축기 `kMc` +0.009668, 터빈 `kMt` +0.008830이며 M4 경보 정책의 핵심 제한사항으로 다룬다.
 - 로컬 기준 모델 joblib은 `artifacts/modeling/`에만 저장하고 Git에 커밋하지 않는다.
+- M3의 목적은 소형 MLP와 선형 잔차 신경망으로 Random Forest의 격자 내부 성능과 심한 열화 방향 외삽 포화 한계를 같은 조건에서 비교하는 것이다.
+- M3 후보는 원시 입력 MLP, 속도 중심화 MLP, 속도 중심화 선형 잔차 MLP의 세 구조와 `(64, 32)`, `(128, 64)` 은닉층 조합으로 구성한 6개다.
+- 모든 M3 후보는 ReLU 은닉층과 선형 출력층을 사용하며 sigmoid와 예측값 clipping은 적용하지 않는다.
+- 선형 잔차 MLP는 표준화 입력의 affine 경로와 MLP 잔차를 더하고 잔차 출력층을 0으로 초기화한다.
+- 속도 중심화 후보는 `v`를 유지하고 나머지 11개 센서를 train의 속도별 평균으로 중심화한 뒤 12개 입력 전체를 표준화한다.
+- M3 입력 scaler와 target scaler는 각 시나리오의 train에만 fit하며 target은 원 단위로 역변환한 뒤 평가한다.
+- M3 학습은 `float32`, 표준화 target MSE, AdamW, learning rate `1e-3`, weight decay `1e-4`, batch 256을 사용한다.
+- 최대 500 epoch, 최소 50 epoch, patience 40과 validation 평균 NRMSE `min_delta=1e-5`로 early stopping하고 best checkpoint를 복원한다.
+- early stopping과 best checkpoint 복원은 validation 지표가 인위적으로 악화되는 합성 테스트로 별도 검증한다.
+- M3 후보 선택은 기본 seed 42에서 파생한 42·43·44 세 seed의 상태 그룹 validation 대상별 NRMSE 평균만 사용한다.
+- M3 동점은 평균 NRMSE, 최악 대상 평균 NRMSE, 더 적은 trainable parameter, 일반 MLP·속도 중심화 MLP·선형 잔차 MLP 순서와 candidate ID로 결정한다.
+- 행 랜덤 validation은 고정 후보의 early stopping에만 사용하고 두 holdout validation은 early stopping과 외삽 강건성 진단에 사용하되, 세 validation 모두 M3 후보 선택에는 사용하지 않는다.
+- 선택된 신경망 구조의 최종 평가 seed는 42로 고정하고 네 시나리오 test를 한 번 평가한 뒤 결과를 근거로 재조정하지 않는다.
+- M3 상태 그룹·압축기·터빈 최종 평가는 selection 단계의 seed 42 checkpoint를 재사용하고 행 랜덤 모델만 최종 평가 단계에서 새로 학습한다.
+- M3 checkpoint 재사용은 train으로만 학습된 모델을 test에서 처음 평가하는 절차이며, 네 시나리오를 다시 학습한 M2와의 차이를 실험 기록과 모델 카드에 명시한다.
+- M3 공식 실험은 CPU에서 수행하고 MPS는 선택 경로로만 제공하며 사용할 수 없거나 결정적 실행이 불가능하면 CPU로 fallback한다.
+- M3 재현성 설정은 Python·NumPy·PyTorch seed, 결정적 알고리즘, DataLoader worker 0과 후보별 독립 초기화를 포함한다.
+- PyTorch는 `>=2.14,<2.15` 범위를 별도 `modeling` 의존성 그룹으로 관리하고 Linux CI에서는 명시적 CPU wheel index를 사용하며 macOS에서는 MPS를 포함한 기본 wheel을 사용한다.
+- M3 checkpoint·manifest·행 단위 예측은 `artifacts/modeling/m3/`에 저장하고 집계 CSV와 핵심 그림만 `reports/modeling/m3/`에 커밋한다.
+- M3의 외삽 보완 여부는 두 holdout 대상의 NRMSE와 절대 bias가 모두 Random Forest보다 낮은지로 해석하되 모델 선택 기준으로 사용하지 않는다.
+- M2 holdout test를 확인한 뒤 M3 구조를 설계했으므로 M3 holdout 결과를 완전히 미관측인 독립 test가 아닌 사전 고정한 벤치마크의 탐색적 비교로 표현한다.
 - M4는 회귀 예측값 기반 경보 정책을 핵심으로 한다.
 - 실제 고장 라벨과 공식 경보 임계값이 없다는 한계를 명시한다.
 - Isolation Forest 또는 Autoencoder는 정상 범위의 근거를 확보한 경우에만 선택 실험으로 수행한다.
