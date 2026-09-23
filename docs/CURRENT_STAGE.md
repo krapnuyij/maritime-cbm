@@ -47,6 +47,9 @@
 - merge 후 main CI run `35875824288`에서 `Quality`·`Docker Smoke` 성공
 - `v0.1.0` tag와 GitHub Release를 commit `952ac13` 대상으로 공개
 - 실제 M3 checkpoint와 `SHA256SUMS`를 Release asset으로 배포하고 공개 URL 재검증 완료
+- 릴리스 완료 기록을 PR #3과 merge commit `dfcea67`로 `main`에 반영
+- merge 후 main CI run `35882226881`에서 `Quality`·`Docker Smoke` 성공
+- 병합된 release-record 브랜치를 로컬·원격에서 삭제하고 `.venv`를 lock 기반으로 재생성
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -56,7 +59,7 @@
 
 ## 진행 중
 
-- `v0.1.0` release 완료 결과를 문서화하고 PR로 `main`에 반영
+- 해당 없음
 
 ## 진행 관리 원칙
 
@@ -68,9 +71,7 @@
 
 ## 다음 작업
 
-1. release 완료 기록 문서 PR을 검증하고 `main`에 반영
-2. 다른 경로에서 복사돼 shebang이 오래된 로컬 `.venv`를 삭제 후 lock 기반으로 재생성
-3. 이력서 성과 문구와 면접용 프로젝트 설명 작성
+1. 이력서 성과 문구와 면접용 프로젝트 설명 작성
 
 ## 확정된 결정
 
@@ -216,6 +217,15 @@
 
 ## 마지막 검증
 
+- 2026-09-24: 릴리스 완료 기록을 PR #3과 merge commit
+  `dfcea678efae01d2f7f5463bd4c321d7d58688ed`로 병합하고 main CI run `35882226881`의
+  `Quality`·`Docker Smoke` 성공 확인
+- 2026-09-24: 병합된 `docs/v0.1.0-release-record` 브랜치를 로컬·원격에서 삭제
+- 2026-09-24: 오래된 shebang의 `.venv`를 삭제하고
+  `uv sync --locked --group dev --group eda --group service`로 재생성한 뒤 현재 저장소 경로의
+  shebang 확인
+- 2026-09-24: 재생성한 환경의 표준 `uv run`으로 pytest 125개 통과, 기존 upstream
+  deprecation warning 2건 확인 및 Ruff·포맷·`uv lock --check` 통과
 - 2026-09-24: [`v0.1.0` GitHub Release](https://github.com/krapnuyij/maritime-cbm/releases/tag/v0.1.0)가
   commit `952ac1306f1378a9df0a259630d0fe6ae699cbe0`을 가리키는 non-draft·non-prerelease
   latest release이며 원격 tag도 같은 commit을 가리킴을 확인
