@@ -267,7 +267,11 @@ def _write_outputs(
     output_directory.mkdir(parents=True, exist_ok=True)
     csv_path = output_directory / "latency_summary.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as file_handle:
-        writer = csv.DictWriter(file_handle, fieldnames=list(asdict(summaries[0])))
+        writer = csv.DictWriter(
+            file_handle,
+            fieldnames=list(asdict(summaries[0])),
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(asdict(summary) for summary in summaries)
     (output_directory / "benchmark_results.json").write_text(

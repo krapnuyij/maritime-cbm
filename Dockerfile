@@ -43,4 +43,3 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
     CMD ["python", "-m", "maritime_cbm.api.healthcheck"]
 
 CMD ["uvicorn", "maritime_cbm.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
-
