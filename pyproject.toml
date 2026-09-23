@@ -19,6 +19,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1,<1.0",
     "pytest>=8.0",
     "ruff>=0.9",
 ]
@@ -27,6 +28,12 @@ eda = [
 ]
 modeling = [
     "torch>=2.14,<2.15",
+]
+service = [
+    { include-group = "modeling" },
+    "fastapi>=0.141.1,<1.0",
+    "pydantic>=2.13.5,<3.0",
+    "uvicorn>=0.53.0,<1.0",
 ]
 
 [tool.uv.sources]

@@ -4,7 +4,7 @@
 
 - M2 기준 모델 ID: `m2-random-forest-baseline-v1`
 - M5 1차 배포 모델 ID: `m3-linear-residual-mlp-v1`
-- 상태: M2·M3 비교와 M4 경보 정책 평가 완료, M5 배포 모델·API 계약 확정
+- 상태: M2·M3 비교, M4 경보 정책과 M5 FastAPI·Docker 로컬 검증 완료
 - M2 구현체: scikit-learn 1.9.1 `RandomForestRegressor`
 - M3 구현체: PyTorch 2.14.0 선형 잔차 MLP
 - 목적: 정상상태 시뮬레이션 센서값에서 `kMc`, `kMt` 열화 상태 계수를 동시에 추정
@@ -14,8 +14,8 @@
 임계값이 없는 공개 시뮬레이션 데이터로 만든 PoC 기준 모델이다.
 
 M3 결과와 M4 경보 정책 분석, artifact 크기와 macOS 예비 운영 측정을 함께 검토해 M3를
-M5 1차 배포 모델로 확정했다. M2는 비교 기준으로 보존하며 M3의 실제 운영 적합성은
-Docker/Linux에서 다시 검증한다.
+M5 1차 배포 모델로 확정했다. M2는 비교 기준으로 보존한다. 실제 M3 checkpoint를 사용한
+Docker/Linux 기동·추론과 고정 프로토콜 운영 측정도 완료했다.
 
 ## 데이터와 입력
 
@@ -168,7 +168,8 @@ M3 상태 그룹 checkpoint는 전처리 상태를 포함해 46,325 byte이며 M
 joblib 253,287,541 byte보다 약 5,468배 작다. 세 M3 checkpoint와 manifest·행 단위 예측을
 모두 포함한 로컬 M3 artifact는 415,937 byte로, 구성 범위가 다른 M2 모델 파일과 직접적인
 배포 크기 비교에는 사용하지 않는다. 작은 checkpoint와 M2 대비 낮은 예비 메모리·추론
-지연은 M5 배포 모델 채택 근거이며, 최종 운영 수치는 Docker/Linux에서 측정한다.
+지연은 M5 배포 모델 채택 근거이며, Docker/Linux API 측정 결과는 아래 M5 절에 별도로
+기록한다.
 
 ## M4 회귀 예측값 기반 경보 정책
 
@@ -240,10 +241,11 @@ M2의 목표 5% cutoff가 상태 그룹 test에서 5.88% FPR을 보인 것이 �
 ## M5 배포 결정과 API 계약
 
 M5 1차 배포 모델은 상태 그룹 seed 42 checkpoint를 사용하는
-`m3-linear-residual-mlp-v1`이다. M5 구현에서는 추적되는 `config/deployment_model.json`에
+`m3-linear-residual-mlp-v1`이다. 추적되는 `config/deployment_model.json`에
 모델·정책 버전, checkpoint SHA-256, target·입력 순서, 허용 속도와 센서 범위, 경보
-임계값을 기록한다. 서비스는 계약과 실제 checkpoint·전처리 상태가 다르면 시작하지 않도록
-구현한다.
+임계값을 기록했다. 서비스는 계약과 실제 checkpoint·전처리 상태가 다르면 시작하지 않는다.
+계약·checkpoint·runtime의 PyTorch 기본 버전도 3자 대조하며 Linux CPU wheel의 `+cpu`
+suffix는 기본 버전 비교에서 제외한다.
 
 상태 추정 API는 다음 12개 이름만 입력받으며 추가 필드, NaN과 무한대를 허용하지 않는다.
 
@@ -280,8 +282,34 @@ v, GTT, GTn, GGn, Ts, T48, T2, P48, P2, Pexh, TIC, mf
 
 M3는 PyTorch import 비용 때문에 cold start가 약 0.3초 느렸지만 peak RSS는 약 절반이고
 단건 추론은 약 34배 빨랐다. macOS와 Linux의 `ru_maxrss` 단위가 다르므로 이 수치를
-Docker/Linux 결과와 직접 비교하지 않는다. M5에서 고정 조건으로 cold start, 상시 메모리와
-단건·배치 API 지연시간을 다시 측정한다.
+Docker/Linux 결과와 직접 비교하지 않는다.
+
+### Docker/Linux API benchmark
+
+실제 상태 그룹 seed 42 checkpoint를 재학습 없이 read-only로 마운트하고 다음 고정 조건에서
+측정했다.
+
+- 환경: Debian GNU/Linux 13, Linux/aarch64, Python 3.13.15, PyTorch 2.14.0+cpu
+- 서비스: FastAPI 0.141.1, Uvicorn 0.53.0, worker 1개, 순차 HTTP/1.1 요청
+- 프로토콜: warm-up 50회, cold start 5회, 단건 1,000회, 100건 batch 200회
+- Docker image: `sha256:c0405643bca6befec748bc3814eb1befbd57c9109923f6a864b73f80d8f82b7c`
+
+| 작업 | 평균 | 중앙값 | p95 | 요청 오류 |
+|---|---:|---:|---:|---:|
+| cold start | 1,452.024ms | 1,301.285ms | 1,780.138ms | 0/5 |
+| 단건 상태 추정 | 1.438ms | 1.277ms | 2.254ms | 0/1,000 |
+| 100건 batch 상태 추정 | 3.901ms | 3.855ms | 5.127ms | 0/200 |
+
+idle process RSS는 352.652MiB, 요청 후 peak process RSS는 355.934MiB였다. 같은 시점의
+Docker cgroup 사용량은 242.9MiB이며, 계측 범위가 다른 값이므로 process RSS와 직접
+차감하거나 같은 지표처럼 비교하지 않는다. 동일 image ID에서 `docker image inspect .Size`는
+354,694,718 byte(338.263MiB), 후속 `docker system df -v` virtual size는 1.7GB였다.
+후자의 shared 201.5MB와 unique 1.503GB 구분은 로컬에 함께 존재하는 다른 image에 따라
+달라질 수 있다. inspect `Size` 필드의 의미를 압축 전송 크기로 단정하지 않는다.
+
+이 결과는 macOS ARM64 호스트 한 대의 Docker/Linux ARM64, concurrency 1 조건이다. 클라우드
+처리량, 높은 동시성, Linux/X64 성능이나 운영 SLA를 보장하지 않는다. 실제 고장진단 성능을
+검증한 결과도 아니다. 명령과 전체 결과는 [`reports/service/`](../reports/service/)에 있다.
 
 ## 재현성과 산출물
 
@@ -301,3 +329,9 @@ Docker/Linux 결과와 직접 비교하지 않는다. M5에서 고정 조건으�
 
 joblib 파일은 pickle 기반이므로 신뢰할 수 없는 출처의 파일을 로드하지 않는다. 재현 명령과
 추적되는 집계 산출물은 [`reports/modeling/`](../reports/modeling/)에 있다.
+
+M5 서비스는 checkpoint를 image에 포함하지 않고 read-only volume으로 마운트한다. 로드 전에
+배포 계약의 SHA-256을 검증하고 `torch.load(..., weights_only=True)` 경로를 사용한다. 이
+검증은 신뢰할 수 없는 artifact를 안전하게 만드는 보안 경계가 아니므로 checkpoint 출처는
+계속 신뢰해야 한다. M5 측정 환경과 결과 JSON은 [`reports/service/`](../reports/service/)에
+추적하며 실제 checkpoint 파일은 Git에 포함하지 않는다.

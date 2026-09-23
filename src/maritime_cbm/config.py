@@ -14,6 +14,11 @@ DEFAULT_M3_MODEL_ARTIFACT_DIR = DEFAULT_MODEL_ARTIFACT_DIR / "m3"
 DEFAULT_M3_MODEL_REPORT_DIR = DEFAULT_MODEL_REPORT_DIR / "m3"
 DEFAULT_ALERT_ARTIFACT_DIR = PROJECT_ROOT / "artifacts" / "alerting"
 DEFAULT_ALERT_REPORT_DIR = PROJECT_ROOT / "reports" / "alerting"
+DEFAULT_DEPLOYMENT_CONTRACT_PATH = PROJECT_ROOT / "config" / "deployment_model.json"
+DEFAULT_DEPLOYMENT_CHECKPOINT_PATH = (
+    DEFAULT_M3_MODEL_ARTIFACT_DIR / "checkpoints" / "state_group_seed_42.pt"
+)
+DEFAULT_SERVICE_REPORT_DIR = PROJECT_ROOT / "reports" / "service"
 
 
 class ConfigurationError(ValueError):
@@ -31,6 +36,9 @@ class Settings:
     m3_model_report_dir: Path
     alert_artifact_dir: Path
     alert_report_dir: Path
+    deployment_contract_path: Path
+    deployment_checkpoint_path: Path
+    service_report_dir: Path
     random_seed: int
 
 
@@ -57,6 +65,15 @@ def get_settings() -> Settings:
         "MARITIME_CBM_ALERT_ARTIFACT_DIR", DEFAULT_ALERT_ARTIFACT_DIR
     )
     alert_report_dir = _resolve_path("MARITIME_CBM_ALERT_REPORT_DIR", DEFAULT_ALERT_REPORT_DIR)
+    deployment_contract_path = _resolve_path(
+        "MARITIME_CBM_DEPLOYMENT_CONTRACT_PATH", DEFAULT_DEPLOYMENT_CONTRACT_PATH
+    )
+    deployment_checkpoint_path = _resolve_path(
+        "MARITIME_CBM_DEPLOYMENT_CHECKPOINT_PATH", DEFAULT_DEPLOYMENT_CHECKPOINT_PATH
+    )
+    service_report_dir = _resolve_path(
+        "MARITIME_CBM_SERVICE_REPORT_DIR", DEFAULT_SERVICE_REPORT_DIR
+    )
 
     seed_value = os.getenv("MARITIME_CBM_RANDOM_SEED", str(DEFAULT_RANDOM_SEED))
     try:
@@ -74,5 +91,8 @@ def get_settings() -> Settings:
         m3_model_report_dir=m3_model_report_dir,
         alert_artifact_dir=alert_artifact_dir,
         alert_report_dir=alert_report_dir,
+        deployment_contract_path=deployment_contract_path,
+        deployment_checkpoint_path=deployment_checkpoint_path,
+        service_report_dir=service_report_dir,
         random_seed=random_seed,
     )

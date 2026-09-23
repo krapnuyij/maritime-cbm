@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M5. 서비스화
+M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 완료
 
@@ -33,6 +33,11 @@ M5. 서비스화
 - 단일 클래스 안전 경보 지표와 validation 고정 FPR cutoff 구현
 - M2·M3 artifact 검증 후 재학습 없이 M4 경보 정책 공식 평가 완료
 - M3가 M2의 심한 열화 방향 경보 누락을 크게 줄이는 결과 확인
+- M3 배포 계약과 checkpoint SHA-256·metadata·PyTorch 버전의 시작 단계 검증 구현
+- FastAPI 단건·배치 상태 추정과 별도 경보 평가 API 및 공통 오류 응답 구현
+- non-root·read-only Docker 실행 환경과 합성 checkpoint 기반 CI smoke test 구성
+- 실제 M3 checkpoint를 사용한 Docker/Linux API 기동·추론 검증 완료
+- 고정 Docker/Linux 조건의 cold start·단건·배치 지연시간과 메모리 측정 완료
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -42,7 +47,7 @@ M5. 서비스화
 
 ## 진행 중
 
-- 확정된 M5 배포 모델·API 계약을 기준으로 FastAPI·Docker 서비스화 구현 계획 수립 준비
+- `feat/m5-service` PR의 원격 CI 검증과 review
 
 ## 진행 관리 원칙
 
@@ -54,10 +59,9 @@ M5. 서비스화
 
 ## 다음 작업
 
-1. M5 FastAPI·Docker 전체 구현 계획 수립과 승인
-2. 배포 계약 파일, FastAPI 추론·경보 API와 입력 검증 구현
-3. Docker 실행 환경과 smoke test 구성
-4. 고정 Docker/Linux 조건의 API 지연시간·메모리 측정과 포트폴리오 문서 최종화
+1. PR의 `Quality`·`Docker Smoke` GitHub Actions 결과 확인
+2. 리뷰 후 merge 여부 결정
+3. 지원서 제출 전 README·모델 카드와 공개 범위 최종 점검
 
 ## 확정된 결정
 
@@ -165,7 +169,7 @@ M5. 서비스화
 - 목표 FPR은 validation 제약이며 test realized FPR을 보장하지 않는다. 목표 5%에서 M2 상태 그룹 test `any` FPR은 0.058770이었다.
 - M5 1차 배포 모델은 `m3-linear-residual-mlp-v1`로 확정한다. M2 Random Forest는 비교 기준으로 유지한다.
 - M3 채택 근거는 M2보다 낮은 상태 그룹·holdout 오차, holdout 경보 누락 개선, 46,325 byte checkpoint와 macOS 예비 측정의 낮은 peak RSS·추론 지연이다.
-- macOS 예비 측정은 모델 결정의 보조 근거이며 최종 운영 수치는 고정 Docker/Linux 조건에서 다시 측정한다.
+- macOS 예비 측정은 모델 결정의 보조 근거로만 사용하고 최종 운영 수치는 고정 Docker/Linux 조건에서 별도로 측정한다.
 - M5 API는 상태 추정과 경보 평가를 분리한 `GET /health`, `GET /model/info`, `POST /v1/condition/predict`, `POST /v1/condition/batch`, `POST /v1/alert/evaluate`로 구성한다.
 - 상태 추정 API는 원본 16개가 아니라 `v`, `GTT`, `GTn`, `GGn`, `Ts`, `T48`, `T2`, `P48`, `P2`, `Pexh`, `TIC`, `mf` 12개 이름을 입력받는다.
 - `v`는 3~27 knots의 3 knots 간격 9개 값만 허용하고, 나머지 11개 센서는 기본 상태 그룹 train 8,352행의 min/max를 양 끝 포함 범위로 사용한다.
@@ -175,6 +179,14 @@ M5. 서비스화
 - 경보 평가는 유한한 `kMc`, `kMt`를 입력받고 공식 계수 범위 이탈을 clipping하거나 거부하지 않은 채 M4 열화도·상태 정책을 적용한다.
 - validation 오류는 `VALIDATION_ERROR` 코드, 공통 메시지와 정제된 세부 정보로 구성한 `error` envelope로 반환하며 요청 본문과 내부 경로를 노출하지 않는다.
 - `config/deployment_model.json`은 모델·정책 버전, checkpoint SHA-256, 입력 순서·범위, target 순서와 경보 임계값을 기록하며 모델·계약 불일치 시 시작 단계에서 실패한다.
+- 배포 runtime은 계약·checkpoint·현재 환경의 PyTorch 기본 버전을 3자 대조하며 Linux CPU wheel의 `+cpu` suffix는 기본 버전 비교에서 제외한다.
+- FastAPI lifespan에서 모델을 프로세스당 한 번 로드하고 Uvicorn worker 1개와 추론 lock을 사용한다.
+- FastAPI·Pydantic·Uvicorn과 PyTorch는 `service` 의존성 그룹으로 관리하고 Docker image에는 `standard` extra를 포함하지 않는다.
+- Docker는 UID/GID 10001의 non-root 사용자, read-only root filesystem·checkpoint mount, capability 제거와 `no-new-privileges`를 사용한다.
+- CI Docker smoke test의 합성 checkpoint는 기동·계약·endpoint·보안 동작 검증 전용이며 성능 결과로 사용하지 않는다.
+- Docker/Linux ARM64 고정 순차 요청에서 cold start 평균 1,452.024ms, 단건 평균 1.438ms, 100건 batch 평균 3.901ms를 측정했다.
+- 같은 측정의 idle process RSS는 352.652MiB, peak process RSS는 355.934MiB, Docker cgroup 사용량은 242.9MiB다.
+- image ID `c0405643...`의 `docker image inspect .Size`는 354,694,718 byte(338.263MiB)이고, 후속 `docker system df -v` virtual size는 1.7GB다.
 - 원본 데이터는 Git에 커밋하지 않는다.
 - 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
@@ -184,6 +196,14 @@ M5. 서비스화
 - 현재 없음
 
 ## 마지막 검증
+
+- 2026-09-23: M5 정정 후 `pytest -q` 125개 테스트 통과, upstream TestClient deprecation warning 2건 확인
+- 2026-09-23: Ruff·포맷·`uv lock --check`·`git diff --check main...HEAD`·`docker compose config --quiet` 통과
+- 2026-09-23: Docker/Linux ARM64에서 실제 M3 checkpoint를 로드하고 UCI 첫 행의 API 추론 및 checkpoint SHA-256 불변 확인
+- 2026-09-23: 합성 checkpoint Docker smoke test로 non-root UID, read-only root filesystem·mount, 쓰기 거부와 5개 endpoint 확인
+- 2026-09-23: 고정 Docker/Linux benchmark에서 cold start 5회, 단건 1,000회, 100건 batch 200회 요청 오류 0건 확인
+- 2026-09-23: benchmark 기준 Debian 13·Linux/aarch64·Python 3.13.15·PyTorch 2.14.0+cpu 확인
+- 2026-09-23: 동일 image ID에서 inspect `Size` 338.263MiB, `system df -v` virtual 1.7GB·shared 201.5MB·unique 1.503GB 확인
 
 - 2026-09-22: 기본 상태 그룹 train 기준 11개 연속 센서 범위를 전체 데이터와 네 시나리오 validation·test에 적용해 범위 이탈 0행 확인
 - 2026-09-22: macOS 예비 측정에서 M2/M3 peak RSS 591.9/294.2MB, 단건 평균 지연시간 5.572/0.164ms 확인

@@ -1,0 +1,19 @@
+services:
+  api:
+    build:
+      context: .
+    image: maritime-cbm:local
+    ports:
+      - "127.0.0.1:${MARITIME_CBM_PORT:-8000}:8000"
+    volumes:
+      - type: bind
+        source: ./artifacts/modeling/m3/checkpoints/state_group_seed_42.pt
+        target: /run/model/state_group_seed_42.pt
+        read_only: true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=67108864
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

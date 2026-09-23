@@ -157,17 +157,22 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 - 배포 모델·전처리·입력 범위·경보 정책 계약을 `config/deployment_model.json`에서 버전 관리
 - 계약에는 모델·정책 버전, checkpoint SHA-256, 12개 입력 순서, 허용 운항 속도,
   연속 센서 범위, target 순서와 경보 임계값을 기록하고 불일치하면 서비스 시작을 중단
+- checkpoint 후보 ID·seed·상태 그룹 metadata·전처리 상태를 계약과 대조하고, 계약·
+  checkpoint·runtime의 PyTorch 기본 버전 중 하나라도 다르면 서비스 시작을 중단
 - 상태 추정과 경보 평가 API를 분리하고 단건·배치 상태 추정 제공
-- Pydantic 공통 요청 설정으로 추가 필드와 NaN·무한대를 거부
+- Pydantic 공통 요청 설정으로 타입 강제를 허용하지 않고 추가 필드와 NaN·무한대를 거부
 - 운항 속도 `v`는 3~27 knots의 3 knots 간격 9개 값만 허용하고 나머지 11개 센서는
   상태 그룹 train에서 관측한 min/max 범위를 양 끝 포함으로 검증
 - 범위 밖 입력을 clipping하지 않고 `422`로 거부하며 배치는 1~100건으로 제한
 - FastAPI 기본 validation 오류를 민감한 요청 본문과 내부 경로를 제외한 공통 오류 형식으로 변환
 - 단위·통합 테스트
-- Docker 실행
-- Docker smoke test
+- non-root 단일 worker, read-only root filesystem과 read-only checkpoint mount를 사용하는
+  multi-stage Docker 실행 환경
+- 합성 checkpoint를 기능·보안 검증에만 사용하는 Docker smoke test
 - 확정된 구성 기준 아키텍처와 재현 절차 시각화
 - 고정된 Docker/Linux 조건에서 API 지연시간, cold start와 메모리 사용량 기록
+- Linux/ARM64 단일 worker·순차 요청에서 cold start 5회, 단건 1,000회와 100건 batch 200회로
+  측정하고 결과를 `reports/service/`에 기록
 - README 실행 예시, 실험 결과 및 포트폴리오 설명 최종 보완
 - 배포 모델 버전, API 입력·출력과 제한사항을 `docs/MODEL_CARD.md`에 최종 반영
 
@@ -203,8 +208,9 @@ Maritime CBM: 선박 가스터빈 열화 상태 추정 및 경보 API
 v, GTT, GTn, GGn, Ts, T48, T2, P48, P2, Pexh, TIC, mf
 ```
 
-요청 모델은 `ConfigDict(extra="forbid", allow_inf_nan=False)`를 공통 적용한다. validation
-실패는 `422`와 다음 envelope로 반환하며 `details`에는 정제한 위치·유형·메시지만 포함한다.
+요청 모델은 `ConfigDict(extra="forbid", allow_inf_nan=False, strict=True)`를 공통 적용한다.
+validation 실패는 `422`와 다음 envelope로 반환하며 `details`에는 정제한 위치·유형·메시지만
+포함한다.
 
 ```json
 {
@@ -226,5 +232,8 @@ v, GTT, GTn, GGn, Ts, T48, T2, P48, P2, Pexh, TIC, mf
 - 결과가 실제 실행 로그로 재현된다.
 - 경보 정책의 임계값 근거와 실제 고장 라벨 부재 한계가 명시된다.
 - API 입력 검증과 오류 테스트가 존재한다.
+- 배포 계약과 checkpoint가 불일치하면 서비스 시작이 실패한다.
+- Docker가 non-root·read-only 조건에서 실제 checkpoint를 변경하지 않고 동작한다.
+- 고정 Docker/Linux 조건의 cold start, 단건·배치 지연시간과 메모리 사용량이 기록된다.
 - 새 환경에서 README만 보고 실행할 수 있다.
 - 데이터 한계와 모델 한계가 문서에 명시된다.

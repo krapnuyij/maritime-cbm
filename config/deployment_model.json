@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "model_version": "m3-linear-residual-mlp-v1",
+  "candidate_id": "linear_residual_mlp_speed_centered_hidden_128_64",
+  "checkpoint_sha256": "cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472",
+  "checkpoint_seed": 42,
+  "checkpoint_scenario": "state_group",
+  "torch_base_version": "2.14.0",
+  "input_features": [
+    "v",
+    "GTT",
+    "GTn",
+    "GGn",
+    "Ts",
+    "T48",
+    "T2",
+    "P48",
+    "P2",
+    "Pexh",
+    "TIC",
+    "mf"
+  ],
+  "target_columns": [
+    "kMc",
+    "kMt"
+  ],
+  "allowed_speeds": [
+    3.0,
+    6.0,
+    9.0,
+    12.0,
+    15.0,
+    18.0,
+    21.0,
+    24.0,
+    27.0
+  ],
+  "continuous_feature_bounds": {
+    "GTT": {"minimum": 253.547, "maximum": 72784.872},
+    "GTn": {"minimum": 1307.675, "maximum": 3560.741},
+    "GGn": {"minimum": 6589.002, "maximum": 9797.103},
+    "Ts": {"minimum": 5.304, "maximum": 645.249},
+    "T48": {"minimum": 442.364, "maximum": 1115.797},
+    "T2": {"minimum": 540.442, "maximum": 789.094},
+    "P48": {"minimum": 1.093, "maximum": 4.56},
+    "P2": {"minimum": 5.828, "maximum": 23.14},
+    "Pexh": {"minimum": 1.019, "maximum": 1.052},
+    "TIC": {"minimum": 0.0, "maximum": 92.556},
+    "mf": {"minimum": 0.068, "maximum": 1.832}
+  },
+  "policy_version": "m4-severity-policy-v1",
+  "watch_severity_threshold": 0.5,
+  "alert_severity_threshold": 0.8
+}

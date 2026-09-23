@@ -22,6 +22,7 @@
 | EXP-20260922-003 | 2026-09-22 | validation 기반 M3 모델 선택 | `DATASET.md@ef70ee1` | 상태 그룹·두 holdout validation | 6개 PyTorch 후보 × 3 seed | 완료 | [상세](#exp-20260922-003--validation-기반-m3-모델-선택) |
 | EXP-20260922-004 | 2026-09-22 | 고정 M3 모델 최종 평가 | `DATASET.md@ef70ee1` | 네 시나리오 validation·test | 선형 잔차 MLP | 완료 | [상세](#exp-20260922-004--고정-m3-모델-최종-평가) |
 | EXP-20260922-005 | 2026-09-22 | 회귀 예측값 기반 경보 정책 평가 | `DATASET.md@8b8d00b` | 상태 그룹 validation·네 test | M2 Random Forest·M3 선형 잔차 MLP | 완료 | [상세](#exp-20260922-005--회귀-예측값-기반-경보-정책-평가) |
+| EXP-20260923-006 | 2026-09-23 | M5 Docker API 성능·운영 검증 | `DATASET.md@bc7e8da` | 상태 그룹 checkpoint·UCI 입력 | M3 선형 잔차 MLP FastAPI | 완료 | [상세](#exp-20260923-006--m5-docker-api-성능운영-검증) |
 
 ## EXP-20260922-001 — validation 기반 기준 모델 선택
 
@@ -337,6 +338,83 @@ holdout에서는 고정 cutoff Recall만 보고하고 FPR은 `NA`로 기록했�
 - 한계: reference는 실제 고장이 아닌 simulator 상태 계수 기반이며 두 holdout 대상은 단일 클래스
 - 비지도 이상탐지: 근거 있는 정상 모집단이 없어 Isolation Forest·Autoencoder를 수행하지 않음
 - 다음 결정: M5에서 배포 모델과 API 계약을 확정하고 실제 지연시간·메모리를 측정
+
+## EXP-20260923-006 — M5 Docker API 성능·운영 검증
+
+### 실행 정보
+
+- 상태: 완료
+- 실행 일시: 2026-09-23 00:42 KST
+- Git commit: `bc7e8da525518234cddf983e3e667043a9a6712f`
+- 작업 트리 상태: dirty
+- 관련 미커밋 파일: `scripts/benchmark_service.py`
+- 실행 명령:
+
+  ```bash
+  uv run --locked --group service python scripts/benchmark_service.py \
+    --image maritime-cbm:m5-local \
+    --checkpoint artifacts/modeling/m3/checkpoints/state_group_seed_42.pt \
+    --data data/raw/uci_cbm/data.txt \
+    --output-directory reports/service \
+    --host-port 18082 \
+    --platform linux/arm64
+  ```
+
+- 실험 목적: 실제 M3 checkpoint를 제공하는 Docker API의 고정 조건 지연시간·메모리와
+  checkpoint 불변성 확인
+- 모델 학습: 수행하지 않음
+
+### 데이터와 배포 artifact
+
+- 데이터셋: UCI `Condition Based Maintenance of Naval Propulsion Plants`, 11,934행·18열
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `bc7e8da`
+- 요청 payload: 공식 데이터의 첫 100행에서 선택한 확정 12개 입력
+- 배포 모델: `m3-linear-residual-mlp-v1`, 상태 그룹 seed 42 checkpoint
+- checkpoint SHA-256: `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`
+- checkpoint 처리: read-only mount, benchmark 전후 SHA-256 일치
+
+### 고정 실행 조건
+
+- host: macOS 26.5.1 arm64, Docker server 29.5.3
+- container: Debian GNU/Linux 13, Linux/aarch64, Python 3.13.15
+- runtime: PyTorch 2.14.0+cpu, FastAPI 0.141.1, Uvicorn 0.53.0
+- service: Uvicorn worker 1개, concurrency 1, 하나의 지속 HTTP/1.1 client로 순차 요청
+- protocol: warm-up 50회, cold start 5회, 단건 1,000회, 100건 batch 200회
+- Docker image: `sha256:c0405643bca6befec748bc3814eb1befbd57c9109923f6a864b73f80d8f82b7c`
+- `docker image inspect .Size`: 354,694,718 byte, 338.263MiB
+- 후속 `docker system df -v`: virtual 1.7GB, shared 201.5MB, unique 1.503GB
+
+`docker system df -v`의 virtual size는 shared와 unique의 합이다. shared·unique 구분은 같은
+로컬 image store에 존재하는 다른 image 구성에 따라 달라질 수 있다. `docker image inspect`
+`Size` 필드의 의미를 압축 전송 크기로 단정하지 않고 명령과 필드 기준으로 기록한다.
+
+### 결과
+
+| 작업 | 평균 | 중앙값 | p95 | 요청 오류 |
+|---|---:|---:|---:|---:|
+| cold start | 1,452.024ms | 1,301.285ms | 1,780.138ms | 0/5 |
+| 단건 상태 추정 | 1.438ms | 1.277ms | 2.254ms | 0/1,000 |
+| 100건 batch 상태 추정 | 3.901ms | 3.855ms | 5.127ms | 0/200 |
+
+- idle process RSS: 352.652MiB
+- process peak RSS: 355.934MiB
+- 요청 후 Docker cgroup 사용량: 242.9MiB
+- 산출물: `reports/service/latency_summary.csv`, `reports/service/benchmark_results.json`
+
+1차 실행은 모든 요청이 끝난 뒤 Docker stats의 공백 없는 `242.9MiB` 문자열을 두 token으로
+가정한 parser 오류로 결과 저장 전에 실패했다. 이는 API나 모델 오류가 아니다. 단위를
+정규식으로 해석하도록 수정한 뒤 같은 고정 프로토콜 전체를 처음부터 다시 실행해 위 결과를
+얻었다.
+
+### 결론과 한계
+
+- 실제 checkpoint를 Linux container에서 로드해 요청 오류 없이 단건·배치 추론을 완료했다.
+- 합성 smoke 결과가 아니라 실제 artifact와 UCI 입력으로 얻은 운영 측정이다.
+- process RSS와 Docker cgroup 값은 계측 범위가 다르므로 직접 차감하거나 같은 지표로
+  비교하지 않는다.
+- 단일 ARM64 MacBook Docker, concurrency 1 결과이므로 Linux/X64, 높은 동시성, 클라우드
+  처리량이나 SLA로 일반화하지 않는다.
+- 이 실험은 서비스 운영 특성 검증이며 실제 고장진단 성능 검증이 아니다.
 
 ## 실험별 기록 양식
 
