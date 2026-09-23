@@ -9,6 +9,8 @@
 - 지표는 실제 실행 결과만 기록하며 추정값이나 예시 값을 결과처럼 남기지 않는다.
 - 데이터와 artifact 경로는 저장소 루트 기준 상대경로로 기록한다.
 - `docs/DATASET.md`에 기록된 데이터 해시를 Git commit과 함께 참조한다.
+- 공개본의 Git commit 참조는 author·committer 이메일과 Private 개발 PR merge 제목을
+  재작성한 뒤 생성된 commit ID이며, 대응하는 파일 트리와 실험 산출물은 변경하지 않았다.
 - 커밋하지 않은 변경이 있는 상태에서 실행했다면 dirty 상태와 관련 파일을 기록한다.
 - 설정 파일을 사용한 경우 경로를 기록하고, 실행 시 덮어쓴 값은 별도로 명시한다.
 - 모델 간 비교에는 동일한 데이터 분할과 평가 지표를 사용한다.
@@ -17,12 +19,12 @@
 
 | 실험 ID | 날짜 | 목적 | 데이터 카드 | 분할 | 모델 | 상태 | 상세 기록 |
 |---|---|---|---|---|---|---|---|
-| EXP-20260922-001 | 2026-09-22 | validation 기반 기준 모델 선택 | `DATASET.md@129ae3c` | 상태 그룹·두 holdout validation | 17개 scikit-learn 후보 | 완료 | [상세](#exp-20260922-001--validation-기반-기준-모델-선택) |
-| EXP-20260922-002 | 2026-09-22 | 고정 기준 모델 최종 평가 | `DATASET.md@129ae3c` | 네 시나리오 validation·test | Random Forest | 완료 | [상세](#exp-20260922-002--고정-기준-모델-최종-평가) |
-| EXP-20260922-003 | 2026-09-22 | validation 기반 M3 모델 선택 | `DATASET.md@ef70ee1` | 상태 그룹·두 holdout validation | 6개 PyTorch 후보 × 3 seed | 완료 | [상세](#exp-20260922-003--validation-기반-m3-모델-선택) |
-| EXP-20260922-004 | 2026-09-22 | 고정 M3 모델 최종 평가 | `DATASET.md@ef70ee1` | 네 시나리오 validation·test | 선형 잔차 MLP | 완료 | [상세](#exp-20260922-004--고정-m3-모델-최종-평가) |
-| EXP-20260922-005 | 2026-09-22 | 회귀 예측값 기반 경보 정책 평가 | `DATASET.md@8b8d00b` | 상태 그룹 validation·네 test | M2 Random Forest·M3 선형 잔차 MLP | 완료 | [상세](#exp-20260922-005--회귀-예측값-기반-경보-정책-평가) |
-| EXP-20260923-006 | 2026-09-23 | M5 Docker API 성능·운영 검증 | `DATASET.md@bc7e8da` | 상태 그룹 checkpoint·UCI 입력 | M3 선형 잔차 MLP FastAPI | 완료 | [상세](#exp-20260923-006--m5-docker-api-성능운영-검증) |
+| EXP-20260922-001 | 2026-09-22 | validation 기반 기준 모델 선택 | `DATASET.md@9b57e78` | 상태 그룹·두 holdout validation | 17개 scikit-learn 후보 | 완료 | [상세](#exp-20260922-001--validation-기반-기준-모델-선택) |
+| EXP-20260922-002 | 2026-09-22 | 고정 기준 모델 최종 평가 | `DATASET.md@9b57e78` | 네 시나리오 validation·test | Random Forest | 완료 | [상세](#exp-20260922-002--고정-기준-모델-최종-평가) |
+| EXP-20260922-003 | 2026-09-22 | validation 기반 M3 모델 선택 | `DATASET.md@bce8d27` | 상태 그룹·두 holdout validation | 6개 PyTorch 후보 × 3 seed | 완료 | [상세](#exp-20260922-003--validation-기반-m3-모델-선택) |
+| EXP-20260922-004 | 2026-09-22 | 고정 M3 모델 최종 평가 | `DATASET.md@bce8d27` | 네 시나리오 validation·test | 선형 잔차 MLP | 완료 | [상세](#exp-20260922-004--고정-m3-모델-최종-평가) |
+| EXP-20260922-005 | 2026-09-22 | 회귀 예측값 기반 경보 정책 평가 | `DATASET.md@e37390f` | 상태 그룹 validation·네 test | M2 Random Forest·M3 선형 잔차 MLP | 완료 | [상세](#exp-20260922-005--회귀-예측값-기반-경보-정책-평가) |
+| EXP-20260923-006 | 2026-09-23 | M5 Docker API 성능·운영 검증 | `DATASET.md@9d61277` | 상태 그룹 checkpoint·UCI 입력 | M3 선형 잔차 MLP FastAPI | 완료 | [상세](#exp-20260923-006--m5-docker-api-성능운영-검증) |
 
 ## EXP-20260922-001 — validation 기반 기준 모델 선택
 
@@ -30,7 +32,7 @@
 
 - 상태: 완료
 - 실행 일시: 2026-09-22 11:47 KST
-- Git commit: `129ae3c`
+- Git commit: `9b57e78`
 - 작업 트리 상태: 실행 시작 시 clean
 - 관련 미커밋 파일: 해당 없음
 - 실행 명령: `uv run --locked --group eda python -m maritime_cbm.modeling.benchmark select`
@@ -40,7 +42,7 @@
 
 - 데이터셋과 릴리스: UCI `Condition Based Maintenance of Naval Propulsion Plants`
 - 원본 파일 상대경로: `data/raw/uci_cbm/`
-- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `129ae3c`
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `9b57e78`
 - 행·열 수: 11,934행·18열
 - 입력 변수: 구조적 상수·중복 4개를 제외한 12개
 - 예측 대상: `kMc`, `kMt`
@@ -110,7 +112,7 @@
 
 - 상태: 완료
 - 실행 일시: 2026-09-22 11:48 KST
-- Git commit: `129ae3c`
+- Git commit: `9b57e78`
 - 작업 트리 상태: dirty
 - 관련 미커밋 파일: selection 단계가 생성한 `reports/modeling/candidate_validation_metrics.csv`, `reports/modeling/model_selection_summary.csv`
 - 실행 명령: `uv run --locked --group eda python -m maritime_cbm.modeling.benchmark evaluate`
@@ -120,7 +122,7 @@
 
 - 데이터셋과 릴리스: UCI `Condition Based Maintenance of Naval Propulsion Plants`
 - 원본 파일 상대경로: `data/raw/uci_cbm/`
-- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `129ae3c`
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `9b57e78`
 - 행·열 수: 11,934행·18열
 - 입력 변수: `v`를 포함한 확정 12개 입력
 - 예측 대상: `kMc`, `kMt`
@@ -186,7 +188,7 @@
 
 - 상태: 완료
 - 실행 일시: 2026-09-22 15:34 KST
-- Git commit: `ef70ee1`
+- Git commit: `bce8d27`
 - 작업 트리 상태: 실행 시작 시 clean
 - 관련 미커밋 파일: 해당 없음
 - 실행 명령: `uv run --locked --group eda --group modeling python -m maritime_cbm.modeling.torch_benchmark select --device cpu`
@@ -195,7 +197,7 @@
 ### 데이터·분할
 
 - 데이터셋: UCI `Condition Based Maintenance of Naval Propulsion Plants`, 11,934행·18열
-- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `ef70ee1`
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `bce8d27`
 - 입력·대상: 확정 12개 입력, `kMc`, `kMt`
 - 분할: 상태 그룹 validation으로 선택, 두 holdout validation은 early stopping과 외삽 진단
 - random seed: 42·43·44
@@ -227,7 +229,7 @@
 
 - 상태: 완료
 - 실행 일시: 2026-09-22 15:35 KST
-- Git commit: `ef70ee1`
+- Git commit: `bce8d27`
 - 작업 트리 상태: dirty
 - 관련 미커밋 파일: selection 단계가 생성한 `reports/modeling/m3/` CSV 3개
 - 실행 명령: `uv run --locked --group eda --group modeling python -m maritime_cbm.modeling.torch_benchmark evaluate --device cpu`
@@ -273,7 +275,7 @@ test가 아니라 사전에 고정한 벤치마크의 탐색적 비교다. M3는
 
 - 상태: 완료
 - 실행 일시: 2026-09-22 18:40 KST
-- Git commit: `8b8d00b`
+- Git commit: `e37390f`
 - 작업 트리 상태: dirty
 - 관련 미커밋 파일: 첫 실행에서 생성한 `reports/alerting/`과 결과 문서화 중인 README·문서 3개, 코드 변경 없음
 - 실행 명령: `uv run --locked --group eda --group modeling python -m maritime_cbm.alerting.benchmark`
@@ -282,7 +284,7 @@ test가 아니라 사전에 고정한 벤치마크의 탐색적 비교다. M3는
 ### 데이터와 upstream artifact
 
 - 데이터셋: UCI `Condition Based Maintenance of Naval Propulsion Plants`, 11,934행·18열
-- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `8b8d00b`
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `e37390f`
 - 분할: 상태 그룹 validation과 행 랜덤·상태 그룹·압축기·터빈 holdout test
 - M2 모델 SHA-256: `0c59bc9110ddd31965212bc9d46635071309ca50d4f68edbd76bffc0cd3a034a`
 - M2 test 예측 SHA-256: `6c3ba563d65d539daba5697a4e7fc321134127c5666d899941b3df9b78b69417`
@@ -345,7 +347,7 @@ holdout에서는 고정 cutoff Recall만 보고하고 FPR은 `NA`로 기록했�
 
 - 상태: 완료
 - 실행 일시: 2026-09-23 00:42 KST
-- Git commit: `bc7e8da525518234cddf983e3e667043a9a6712f`
+- Git commit: `9d61277035c47053e76ddb83b014cda7f5d912ef`
 - 작업 트리 상태: dirty
 - 관련 미커밋 파일: `scripts/benchmark_service.py`
 - 실행 명령:
@@ -367,7 +369,7 @@ holdout에서는 고정 cutoff Recall만 보고하고 FPR은 `NA`로 기록했�
 ### 데이터와 배포 artifact
 
 - 데이터셋: UCI `Condition Based Maintenance of Naval Propulsion Plants`, 11,934행·18열
-- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `bc7e8da`
+- 데이터 카드 참조: `docs/DATASET.md`와 Git commit `9d61277`
 - 요청 payload: 공식 데이터의 첫 100행에서 선택한 확정 12개 입력
 - 배포 모델: `m3-linear-residual-mlp-v1`, 상태 그룹 seed 42 checkpoint
 - checkpoint SHA-256: `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`

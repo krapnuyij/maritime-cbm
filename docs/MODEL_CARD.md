@@ -8,7 +8,7 @@
 - M2 구현체: scikit-learn 1.9.1 `RandomForestRegressor`
 - M3 구현체: PyTorch 2.14.0 선형 잔차 MLP
 - 목적: 정상상태 시뮬레이션 센서값에서 `kMc`, `kMt` 열화 상태 계수를 동시에 추정
-- M2 기준 Git commit: `129ae3c`
+- M2 기준 Git commit: `9b57e78`
 
 이 모델은 실제 선박 고장진단 모델이 아니다. 실제 고장 라벨, 타임스탬프와 공식 경보
 임계값이 없는 공개 시뮬레이션 데이터로 만든 PoC 기준 모델이다.
