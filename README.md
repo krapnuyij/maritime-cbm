@@ -18,9 +18,9 @@
 ## 현재 상태
 
 M0 프로젝트 기반 구성부터 M5 FastAPI·Docker 서비스화까지 로컬 구현과 검증을 완료했다.
-기존 44개 커밋(9개 merge commit 포함)의 개발 이력을 유지하고 공개본 전용 정리를
-추가했으며, 현재 단계는 새 저장소 최초 CI 재검증과 지원서 제출을 위한 포트폴리오 최종
-점검이다.
+공개본 정리를 PR #1로 `main`에 반영했고, merge commit `3fde859`의 GitHub Actions
+run `35828745744`에서 `Quality`와 `Docker Smoke`가 모두 성공했다. 현재는 최초 공개
+버전 `v0.1.0`과 실제 M3 checkpoint의 GitHub Release asset 배포를 준비하고 있다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -29,6 +29,7 @@ M0 프로젝트 기반 구성부터 M5 FastAPI·Docker 서비스화까지 로컬
 - [데이터셋 안내](docs/DATASET.md)
 - [실험 기록](docs/EXPERIMENT_LOG.md)
 - [모델 카드](docs/MODEL_CARD.md)
+- [Artifact 배포 정책](docs/ARTIFACTS.md)
 
 ## 개발 환경
 
@@ -54,9 +55,9 @@ uv run --locked --group eda --group service pytest -q
 
 GitHub Actions는 Ubuntu에서 lock 파일, Ruff, 포맷과 pytest를 검증하는 `Quality` job과
 합성 checkpoint로 컨테이너 보안 설정·기동·5개 endpoint를 확인하는 `Docker Smoke` job을
-실행하도록 구성했다. 공개본 최초 push 후 두 job을 다시 검증하고 완료 상태를 갱신한다.
-원본 UCI 파일과 실제 checkpoint는 라이선스·대용량 artifact 재배포 방침 때문에 CI에서
-내려받지 않는다.
+실행하도록 구성했다. 공개본 merge commit `3fde859`의 최초 push에서 두 job이 모두
+성공했다. 원본 UCI 파일은 재배포하지 않으며, 실제 checkpoint는 Git과 CI에 포함하지 않고
+`v0.1.0` GitHub Release asset으로 별도 배포한다.
 
 원본에서 확인한 `kMc` 우선·`kMt` 차순의 9행 상태 그룹 블록 배치를 재현한 합성 격자로,
 문서화된 분할 해시 12개가 Ubuntu CI에서 재현됐다. 실제 분할 해시 검증은 합성 격자가
@@ -139,8 +140,34 @@ flowchart LR
     E --> R[M4 severity policy<br/>normal / watch / alert]
 ```
 
-실제 M3 checkpoint가 기본 경로에 있어야 한다. checkpoint가 없다면 먼저 M3 재현 명령으로
-생성한다.
+실제 M3 checkpoint가 다음 기본 경로에 있어야 한다.
+
+```text
+artifacts/modeling/m3/checkpoints/state_group_seed_42.pt
+```
+
+`v0.1.0` release 발행 후에는 asset을 받으면서 Compose가 기대하는 이름과 경로로 저장한다.
+Release 전이거나 직접 재현하려면 앞의 M3 재현 명령으로 checkpoint를 생성한다.
+
+```bash
+mkdir -p artifacts/modeling/m3/checkpoints
+
+curl --fail --location \
+  --output artifacts/modeling/m3/checkpoints/state_group_seed_42.pt \
+  https://github.com/krapnuyij/maritime-cbm/releases/download/v0.1.0/maritime-cbm-m3-linear-residual-mlp-v1.pt
+```
+
+다운로드한 파일은 서비스가 읽기 전에 배포 계약과 같은 SHA-256인지 확인한다. Release asset의
+이름을 로컬에서 바꿔도 파일 내용과 SHA-256은 달라지지 않는다.
+
+```bash
+printf '%s  %s\n' \
+  'cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472' \
+  'artifacts/modeling/m3/checkpoints/state_group_seed_42.pt' \
+  | shasum -a 256 -c -
+```
+
+배포·제외 대상과 라이선스·신뢰 경계는 [Artifact 배포 정책](docs/ARTIFACTS.md)에 정리했다.
 
 - `GET /health`: 서비스와 모델 준비 상태
 - `GET /model/info`: 배포 모델·입력·경보 정책 계약
@@ -253,4 +280,5 @@ uv run python -m maritime_cbm.data.validation /path/to/uci_cbm
 
 프로젝트 코드는 [MIT License](LICENSE)를 따른다. UCI 데이터셋은 별도의
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 라이선스를 따르며,
-프로젝트의 MIT License가 데이터셋에 적용되지는 않는다.
+프로젝트의 MIT License가 데이터셋에 적용되지는 않는다. 원본 데이터와 학습된 checkpoint의
+배포 범위는 [Artifact 배포 정책](docs/ARTIFACTS.md)을 따른다.

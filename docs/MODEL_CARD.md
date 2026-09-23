@@ -158,7 +158,7 @@ M2 holdout 결과를 확인한 뒤 M3 구조를 설계했으므로 holdout 개�
 test 성능이 아니라 사전에 고정한 벤치마크의 탐색적 비교다. 시뮬레이션과 실제 선박 간
 domain gap, 미관측 속도와 실제 고장 상태는 여전히 검증하지 않았다.
 
-M3 checkpoint는 `artifacts/modeling/m3/`에만 저장하고 Git에 포함하지 않는다. 기본 상태
+M3 checkpoint는 `artifacts/modeling/m3/`에 저장하고 Git에는 포함하지 않는다. 기본 상태
 그룹 checkpoint의 SHA-256은
 `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`이다. 재현 명령과
 추적 산출물은 [`reports/modeling/m3/`](../reports/modeling/m3/)에 있다. checkpoint 재로드
@@ -247,6 +247,25 @@ M5 1차 배포 모델은 상태 그룹 seed 42 checkpoint를 사용하는
 계약·checkpoint·runtime의 PyTorch 기본 버전도 3자 대조하며 Linux CPU wheel의 `+cpu`
 suffix는 기본 버전 비교에서 제외한다.
 
+### `v0.1.0` artifact 연결
+
+소프트웨어 release와 모델 버전은 서로 다른 식별자로 유지한다. `v0.1.0`에서 사용하는
+배포 artifact 연결은 다음과 같다.
+
+| 항목 | 값 |
+|---|---|
+| 소프트웨어 release | `v0.1.0` |
+| 배포 모델 버전 | `m3-linear-residual-mlp-v1` |
+| Release asset | `maritime-cbm-m3-linear-residual-mlp-v1.pt` |
+| 로컬 배치 경로 | `artifacts/modeling/m3/checkpoints/state_group_seed_42.pt` |
+| 파일 크기 | 46,325 byte |
+| SHA-256 | `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472` |
+| PyTorch 기본 버전 | `2.14.0` |
+
+Release asset은 파일명을 바꿔 위 로컬 경로에 저장해도 내용과 SHA-256이 유지된다. 원본 UCI
+데이터와 다른 모델·예측 artifact는 release에 포함하지 않는다. 배포 범위, attribution과
+다운로드 후 검증 절차는 [`ARTIFACTS.md`](ARTIFACTS.md)에 기록한다.
+
 상태 추정 API는 다음 12개 이름만 입력받으며 추가 필드, NaN과 무한대를 허용하지 않는다.
 
 ```text
@@ -332,6 +351,7 @@ joblib 파일은 pickle 기반이므로 신뢰할 수 없는 출처의 파일을
 
 M5 서비스는 checkpoint를 image에 포함하지 않고 read-only volume으로 마운트한다. 로드 전에
 배포 계약의 SHA-256을 검증하고 `torch.load(..., weights_only=True)` 경로를 사용한다. 이
-검증은 신뢰할 수 없는 artifact를 안전하게 만드는 보안 경계가 아니므로 checkpoint 출처는
-계속 신뢰해야 한다. M5 측정 환경과 결과 JSON은 [`reports/service/`](../reports/service/)에
-추적하며 실제 checkpoint 파일은 Git에 포함하지 않는다.
+검증은 신뢰할 수 없는 artifact를 안전하게 만드는 보안 경계가 아니므로 checkpoint는 공식
+`v0.1.0` Release에서 받고 SHA-256을 먼저 대조해야 한다. M5 측정 환경과 결과 JSON은
+[`reports/service/`](../reports/service/)에 추적하며 실제 checkpoint 파일은 Git에 포함하지
+않는다.
