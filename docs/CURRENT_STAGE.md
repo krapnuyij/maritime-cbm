@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-`v0.1.0` release 준비 — M0~M5 완료
+`v0.1.0` release 완료 — M0~M5 완료
 
 ## 완료
 
@@ -43,6 +43,10 @@
 - 공개본 정리를 PR #1과 merge commit `3fde859`로 `main`에 반영
 - GitHub 저장소를 Public으로 전환하고 기본 브랜치 `main`과 공개 범위를 확인
 - 공개본 최초 CI run `35828745744`에서 `Quality`·`Docker Smoke` 성공
+- 릴리스 준비 문서를 PR #2와 merge commit `952ac13`로 `main`에 반영
+- merge 후 main CI run `35875824288`에서 `Quality`·`Docker Smoke` 성공
+- `v0.1.0` tag와 GitHub Release를 commit `952ac13` 대상으로 공개
+- 실제 M3 checkpoint와 `SHA256SUMS`를 Release asset으로 배포하고 공개 URL 재검증 완료
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -52,7 +56,7 @@
 
 ## 진행 중
 
-- `v0.1.0` release 문서와 실제 M3 checkpoint GitHub Release asset 배포 준비
+- `v0.1.0` release 완료 결과를 문서화하고 PR로 `main`에 반영
 
 ## 진행 관리 원칙
 
@@ -64,11 +68,9 @@
 
 ## 다음 작업
 
-1. release 준비 문서 PR을 검증하고 `main`에 반영
-2. `v0.1.0` GitHub Release에 실제 M3 checkpoint와 `SHA256SUMS` 첨부
-3. 발행된 asset을 새 경로에 내려받아 SHA-256·API·Docker 동작 재검증
-4. release URL·commit·CI·asset 검증 결과 기록
-5. 이력서 성과 문구와 면접용 프로젝트 설명 작성
+1. release 완료 기록 문서 PR을 검증하고 `main`에 반영
+2. 다른 경로에서 복사돼 shebang이 오래된 로컬 `.venv`를 삭제 후 lock 기반으로 재생성
+3. 이력서 성과 문구와 면접용 프로젝트 설명 작성
 
 ## 확정된 결정
 
@@ -214,6 +216,20 @@
 
 ## 마지막 검증
 
+- 2026-09-24: [`v0.1.0` GitHub Release](https://github.com/krapnuyij/maritime-cbm/releases/tag/v0.1.0)가
+  commit `952ac1306f1378a9df0a259630d0fe6ae699cbe0`을 가리키는 non-draft·non-prerelease
+  latest release이며 원격 tag도 같은 commit을 가리킴을 확인
+- 2026-09-24: 공개 Release asset `maritime-cbm-m3-linear-residual-mlp-v1.pt` 46,325 byte와
+  `SHA256SUMS` 108 byte의 업로드 상태와 GitHub 제공 SHA-256 digest 확인
+- 2026-09-24: 공개 URL에서 두 asset을 새 임시 경로에 다운로드하고 `shasum -a 256 -c`와
+  `config/deployment_model.json` 대조로 checkpoint SHA-256
+  `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472` 일치 확인
+- 2026-09-24: 다운로드한 checkpoint가 배포 계약·metadata 검증을 통과하고, commit `952ac13`
+  기반 Docker image에서 non-root UID 10001, read-only root filesystem·mount, capability 제거,
+  `no-new-privileges`와 5개 endpoint 동작 및 실행 전후 SHA-256 불변 확인
+- 2026-09-24: 릴리스 검증용 컨테이너·Docker image 2개와 업로드·다운로드 임시 디렉터리 제거
+- 2026-09-23: 릴리스 준비 문서를 PR #2와 merge commit `952ac13`로 병합하고 main CI run
+  `35875824288`의 `Quality`·`Docker Smoke` 성공 확인
 - 2026-09-23: 공개 작업본 `main` HEAD와 `origin/main`이 merge commit `3fde859`로 일치하고
   작업 트리가 clean이며 GitHub 저장소가 Public 상태임을 확인
 - 2026-09-23: 공개본 CI run `35828745744`의 `Quality`·`Docker Smoke` 성공 확인

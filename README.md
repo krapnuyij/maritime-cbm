@@ -19,8 +19,10 @@
 
 M0 프로젝트 기반 구성부터 M5 FastAPI·Docker 서비스화까지 로컬 구현과 검증을 완료했다.
 공개본 정리를 PR #1로 `main`에 반영했고, merge commit `3fde859`의 GitHub Actions
-run `35828745744`에서 `Quality`와 `Docker Smoke`가 모두 성공했다. 현재는 최초 공개
-버전 `v0.1.0`과 실제 M3 checkpoint의 GitHub Release asset 배포를 준비하고 있다.
+run `35828745744`에서 `Quality`와 `Docker Smoke`가 모두 성공했다. 릴리스 준비 문서를
+PR #2와 merge commit `952ac13`로 반영한 뒤 main CI run `35875824288`을 통과했고,
+[최초 공개 버전 `v0.1.0`](https://github.com/krapnuyij/maritime-cbm/releases/tag/v0.1.0)에
+실제 M3 checkpoint와 `SHA256SUMS`를 배포했다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -146,8 +148,8 @@ flowchart LR
 artifacts/modeling/m3/checkpoints/state_group_seed_42.pt
 ```
 
-`v0.1.0` release 발행 후에는 asset을 받으면서 Compose가 기대하는 이름과 경로로 저장한다.
-Release 전이거나 직접 재현하려면 앞의 M3 재현 명령으로 checkpoint를 생성한다.
+`v0.1.0` Release에서 asset을 받으면서 Compose가 기대하는 이름과 경로로 저장한다.
+직접 재현하려면 앞의 M3 재현 명령으로 checkpoint를 생성한다.
 
 ```bash
 mkdir -p artifacts/modeling/m3/checkpoints
