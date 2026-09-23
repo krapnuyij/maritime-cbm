@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-포트폴리오 최종 점검 — M0~M5 완료
+`v0.1.0` release 준비 — M0~M5 완료
 
 ## 완료
 
@@ -40,6 +40,9 @@
 - 고정 Docker/Linux 조건의 cold start·단건·배치 지연시간과 메모리 측정 완료
 - M5 변경을 merge commit `239ea31`로 `main`에 반영
 - merge 후 main의 GitHub Actions `Quality`·`Docker Smoke` 성공
+- 공개본 정리를 PR #1과 merge commit `3fde859`로 `main`에 반영
+- GitHub 저장소를 Public으로 전환하고 기본 브랜치 `main`과 공개 범위를 확인
+- 공개본 최초 CI run `35828745744`에서 `Quality`·`Docker Smoke` 성공
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -49,7 +52,7 @@
 
 ## 진행 중
 
-- 공개본 최초 CI 재검증과 지원서 제출 전 저장소 공개 범위·재현 경로 최종 점검
+- `v0.1.0` release 문서와 실제 M3 checkpoint GitHub Release asset 배포 준비
 
 ## 진행 관리 원칙
 
@@ -61,10 +64,11 @@
 
 ## 다음 작업
 
-1. 공개 저장소 전환 전 보안·라이선스·개인정보 점검
-2. GitHub description·topics와 공개 시점 확정
-3. `v0.1.0` release 및 실제 checkpoint 배포 방식 결정
-4. 이력서 성과 문구와 면접용 프로젝트 설명 작성
+1. release 준비 문서 PR을 검증하고 `main`에 반영
+2. `v0.1.0` GitHub Release에 실제 M3 checkpoint와 `SHA256SUMS` 첨부
+3. 발행된 asset을 새 경로에 내려받아 SHA-256·API·Docker 동작 재검증
+4. release URL·commit·CI·asset 검증 결과 기록
+5. 이력서 성과 문구와 면접용 프로젝트 설명 작성
 
 ## 확정된 결정
 
@@ -76,6 +80,16 @@
 - 외부 설정 파일은 실제 필요가 확인될 때 도입하며 M1 시작 시점에는 추가하지 않는다.
 - 프로젝트 코드 라이선스: MIT License
 - UCI 데이터셋 라이선스: CC BY 4.0
+- `v0.1.0`은 M0~M5를 포함한 최초 공개 포트폴리오 release로 준비한다.
+- 실제 M3 배포 checkpoint는 Git에 커밋하지 않고 `v0.1.0` GitHub Release asset으로 배포한다.
+- Release asset 이름은 `maritime-cbm-m3-linear-residual-mlp-v1.pt`로 고정하고, 로컬에서는
+  `artifacts/modeling/m3/checkpoints/state_group_seed_42.pt`로 저장한다.
+- 배포 checkpoint는 46,325 byte이며 SHA-256은
+  `cbb56741b2a9209afea71bfdc7b8f0a575b2ece4e0795343170e2c3c086cf472`이다.
+- Release asset 무결성은 `SHA256SUMS`와 `config/deployment_model.json`의 SHA-256을 새로
+  다운로드한 파일과 대조해 검증하며 별도 artifact attestation은 이번 PoC 범위에 포함하지 않는다.
+- UCI 원본 데이터, M2 joblib, 나머지 M3 checkpoint, 행 단위 예측과 Docker image는
+  `v0.1.0` Release asset에 포함하지 않는다.
 - 사용 데이터: UCI `Condition Based Maintenance of Naval Propulsion Plants`
 - 공식 설명 기준 데이터 구조: 11,934행, 16개 입력, 2개 정답
 - 예측 대상: `kMc`, `kMt`
@@ -196,11 +210,23 @@
 
 ## 미확정 사항
 
-- 저장소를 Public으로 전환할 시점
-- `v0.1.0` release 생성 여부와 실제 checkpoint 배포 방식
+- 해당 없음
 
 ## 마지막 검증
 
+- 2026-09-23: 공개 작업본 `main` HEAD와 `origin/main`이 merge commit `3fde859`로 일치하고
+  작업 트리가 clean이며 GitHub 저장소가 Public 상태임을 확인
+- 2026-09-23: 공개본 CI run `35828745744`의 `Quality`·`Docker Smoke` 성공 확인
+- 2026-09-23: 실제 UCI 원본과 M3 checkpoint를 공개 로컬 작업본의 Git 제외 경로에 배치하고
+  원본 파일 3개·11,934행·18열·공식 격자와 checkpoint SHA-256 일치 확인
+- 2026-09-23: 실제 데이터·checkpoint를 포함한 전체 `pytest` 125개 통과, upstream
+  TestClient deprecation warning 2건 확인
+- 2026-09-23: `uv lock --check`·Ruff·포맷·`docker compose config --quiet`·
+  `git diff --check` 통과
+- 2026-09-23: 공개본 `main` commit `3fde859`에서 Docker image `cc2e4f61...`을 빌드하고
+  실제 checkpoint로
+  non-root UID 10001, read-only root filesystem·mount, 5개 endpoint와 실행 전후 SHA-256
+  불변 확인
 - 2026-09-23: M5 변경을 merge commit `239ea31`로 병합하고 `main` 동기화
 - 2026-09-23: 개발 저장소의 M5 merge 후 GitHub Actions `Quality`·`Docker Smoke` 성공
 - 2026-09-23: M5 정정 후 `pytest -q` 125개 테스트 통과, upstream TestClient deprecation warning 2건 확인
