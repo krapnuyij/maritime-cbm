@@ -38,7 +38,7 @@
 - non-root·read-only Docker 실행 환경과 합성 checkpoint 기반 CI smoke test 구성
 - 실제 M3 checkpoint를 사용한 Docker/Linux API 기동·추론 검증 완료
 - 고정 Docker/Linux 조건의 cold start·단건·배치 지연시간과 메모리 측정 완료
-- PR #8을 merge commit `bd6af8c`로 `main`에 반영
+- M5 변경을 merge commit `239ea31`로 `main`에 반영
 - merge 후 main의 GitHub Actions `Quality`·`Docker Smoke` 성공
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
@@ -49,7 +49,7 @@
 
 ## 진행 중
 
-- 지원서 제출 전 저장소 공개 범위·재현 경로와 설명 문구 최종 점검
+- 공개본 최초 CI 재검증과 지원서 제출 전 저장소 공개 범위·재현 경로 최종 점검
 
 ## 진행 관리 원칙
 
@@ -201,8 +201,8 @@
 
 ## 마지막 검증
 
-- 2026-09-23: PR #8을 merge commit `bd6af8c`로 병합하고 로컬·원격 `main` 동기화
-- 2026-09-23: main push GitHub Actions 실행 `35804248463`의 `Quality`·`Docker Smoke` 성공
+- 2026-09-23: M5 변경을 merge commit `239ea31`로 병합하고 `main` 동기화
+- 2026-09-23: 개발 저장소의 M5 merge 후 GitHub Actions `Quality`·`Docker Smoke` 성공
 - 2026-09-23: M5 정정 후 `pytest -q` 125개 테스트 통과, upstream TestClient deprecation warning 2건 확인
 - 2026-09-23: Ruff·포맷·`uv lock --check`·`git diff --check main...HEAD`·`docker compose config --quiet` 통과
 - 2026-09-23: Docker/Linux ARM64에서 실제 M3 checkpoint를 로드하고 UCI 첫 행의 API 추론 및 checkpoint SHA-256 불변 확인
@@ -213,24 +213,24 @@
 
 - 2026-09-22: 기본 상태 그룹 train 기준 11개 연속 센서 범위를 전체 데이터와 네 시나리오 validation·test에 적용해 범위 이탈 0행 확인
 - 2026-09-22: macOS 예비 측정에서 M2/M3 peak RSS 591.9/294.2MB, 단건 평균 지연시간 5.572/0.164ms 확인
-- 2026-09-22: commit `8b8d00b` 기준에서 M2·M3 artifact SHA-256 검증 후 재학습 없이 M4 공식 평가 완료
+- 2026-09-22: commit `e37390f` 기준에서 M2·M3 artifact SHA-256 검증 후 재학습 없이 M4 공식 평가 완료
 - 2026-09-22: M4 주 임계값 0.8에서 상태 그룹과 압축기·터빈 holdout 경보 지표 및 단일 클래스 `NA` 처리 확인
 - 2026-09-22: 결정적 gzip으로 재생성한 M4 행 단위 정책 예측 SHA-256 `d21156993e179c5f0968aeada29bf8d56e62eb8c2220e93246be25ec1c2bdad8`
 - 2026-09-22: M4 구현 후 `pytest -q` 110개 테스트 통과, Ruff·포맷·`uv lock --check`·`git diff --check` 통과
-- 2026-09-22: commit `ef70ee1`의 clean 상태에서 M3 6개 후보 × 3개 시나리오 × 3개 seed validation 선택 실험 완료
+- 2026-09-22: commit `bce8d27`의 clean 상태에서 M3 6개 후보 × 3개 시나리오 × 3개 seed validation 선택 실험 완료
 - 2026-09-22: 고정된 M3 seed 42 checkpoint와 행 랜덤 신규 fit으로 네 시나리오 test 1회 평가 완료
 - 2026-09-22: M3 상태 그룹 test `kMc`/`kMt` R² 0.999903/0.999678, 두 holdout 대상 NRMSE와 건강 방향 bias 감소 확인
 - 2026-09-22: M3 상태 그룹 checkpoint 재로드 예측과 저장 CSV 최대 절대 차이 `1.11e-16`
 - 2026-09-22: M3 구현 후 `pytest -q` 90개 테스트 통과, Ruff·포맷·`uv lock --check`·`git diff --check` 통과
-- 2026-09-22: commit `129ae3c`의 clean 상태에서 validation 전용 17개 후보 선택 실험 완료
+- 2026-09-22: commit `9b57e78`의 clean 상태에서 validation 전용 17개 후보 선택 실험 완료
 - 2026-09-22: 고정 Random Forest로 행 랜덤·상태 그룹·압축기·터빈 holdout test 1회 평가 완료
 - 2026-09-22: 상태 그룹 test `kMc`/`kMt` R² 0.996720/0.992838, holdout 외삽 포화와 건강 방향 bias 확인
 - 2026-09-22: joblib 재로드 예측과 저장 CSV 최대 절대 차이 `1.11e-16`
 - 2026-09-22: M2 구현 후 `pytest -q` 63개 테스트 통과, Ruff·포맷·`uv lock --check` 통과
-- 2026-09-21: GitHub Actions CI 실행 #1(`5948fd3`) 성공, Ubuntu 24.04.5 LTS·Linux/X64(`x86_64`)·Runner Image `20260907.300.1`
+- 2026-09-21: GitHub Actions 최초 CI 대상 commit `47f1479`에서 성공, Ubuntu 24.04.5 LTS·Linux/X64(`x86_64`)·Runner Image `20260907.300.1`
 - 2026-09-21: CI에서 uv 0.12.17·Python 3.13.15로 lock·Ruff·포맷 검사 통과, 39개 테스트 성공·원본 데이터 통합 테스트 3개 skip
-- 2026-09-21: Linux/aarch64 컨테이너(`5948fd3`, Debian 13, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 42개 테스트와 Ruff·포맷 검사 통과
-- 2026-09-21: Linux/aarch64 사전 검증(`main@ada158e`, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 41개 테스트와 Ruff·포맷 검사 통과
+- 2026-09-21: Linux/aarch64 컨테이너(`47f1479`, Debian 13, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 42개 테스트와 Ruff·포맷 검사 통과
+- 2026-09-21: Linux/aarch64 사전 검증(`main@95b3839`, Python 3.13.15, uv 0.12.17)에서 원본 데이터 포함 41개 테스트와 Ruff·포맷 검사 통과
 - 2026-09-21: macOS에서 `uv lock --check`, Ruff·포맷 검사 및 원본 데이터 포함 42개 테스트 통과
 - 2026-09-21: `ruff check .` 통과
 - 2026-09-21: `ruff format --check .` 통과, 24개 파일 형식 확인

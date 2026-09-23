@@ -18,8 +18,9 @@
 ## 현재 상태
 
 M0 프로젝트 기반 구성부터 M5 FastAPI·Docker 서비스화까지 로컬 구현과 검증을 완료했다.
-PR #8을 merge commit으로 `main`에 반영했고, merge 후 `Quality`와 `Docker Smoke`도
-성공했다. 현재 단계는 지원서 제출을 위한 포트폴리오 최종 점검이다.
+기존 44개 커밋(9개 merge commit 포함)의 개발 이력을 유지하고 공개본 전용 정리를
+추가했으며, 현재 단계는 새 저장소 최초 CI 재검증과 지원서 제출을 위한 포트폴리오 최종
+점검이다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -53,9 +54,9 @@ uv run --locked --group eda --group service pytest -q
 
 GitHub Actions는 Ubuntu에서 lock 파일, Ruff, 포맷과 pytest를 검증하는 `Quality` job과
 합성 checkpoint로 컨테이너 보안 설정·기동·5개 endpoint를 확인하는 `Docker Smoke` job을
-실행한다. PR #8과 merge commit `bd6af8c`의 main push에서 두 job이 모두 성공했다. 원본 UCI
-파일과 실제 checkpoint는 라이선스·대용량 artifact 재배포 방침 때문에 CI에서 내려받지
-않는다.
+실행하도록 구성했다. 공개본 최초 push 후 두 job을 다시 검증하고 완료 상태를 갱신한다.
+원본 UCI 파일과 실제 checkpoint는 라이선스·대용량 artifact 재배포 방침 때문에 CI에서
+내려받지 않는다.
 
 원본에서 확인한 `kMc` 우선·`kMt` 차순의 9행 상태 그룹 블록 배치를 재현한 합성 격자로,
 문서화된 분할 해시 12개가 Ubuntu CI에서 재현됐다. 실제 분할 해시 검증은 합성 격자가
