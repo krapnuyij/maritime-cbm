@@ -2,7 +2,7 @@
 
 ## 현재 마일스톤
 
-M5. 서비스화 — 로컬 구현·검증 완료
+포트폴리오 최종 점검 — M0~M5 완료
 
 ## 완료
 
@@ -38,6 +38,8 @@ M5. 서비스화 — 로컬 구현·검증 완료
 - non-root·read-only Docker 실행 환경과 합성 checkpoint 기반 CI smoke test 구성
 - 실제 M3 checkpoint를 사용한 Docker/Linux API 기동·추론 검증 완료
 - 고정 Docker/Linux 조건의 cold start·단건·배치 지연시간과 메모리 측정 완료
+- PR #8을 merge commit `bd6af8c`로 `main`에 반영
+- merge 후 main의 GitHub Actions `Quality`·`Docker Smoke` 성공
 - README 초안과 코드용 MIT License 작성
 - UCI 데이터 출처, CC BY 4.0 라이선스, 인용 및 다운로드 방법 문서화
 - UCI `Condition Based Maintenance of Naval Propulsion Plants` 릴리스 선택
@@ -47,7 +49,7 @@ M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 진행 중
 
-- `feat/m5-service` PR의 원격 CI 검증과 review
+- 지원서 제출 전 저장소 공개 범위·재현 경로와 설명 문구 최종 점검
 
 ## 진행 관리 원칙
 
@@ -59,9 +61,10 @@ M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 다음 작업
 
-1. PR의 `Quality`·`Docker Smoke` GitHub Actions 결과 확인
-2. 리뷰 후 merge 여부 결정
-3. 지원서 제출 전 README·모델 카드와 공개 범위 최종 점검
+1. 공개 저장소 전환 전 보안·라이선스·개인정보 점검
+2. GitHub description·topics와 공개 시점 확정
+3. `v0.1.0` release 및 실제 checkpoint 배포 방식 결정
+4. 이력서 성과 문구와 면접용 프로젝트 설명 작성
 
 ## 확정된 결정
 
@@ -193,10 +196,13 @@ M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 미확정 사항
 
-- 현재 없음
+- 저장소를 Public으로 전환할 시점
+- `v0.1.0` release 생성 여부와 실제 checkpoint 배포 방식
 
 ## 마지막 검증
 
+- 2026-09-23: PR #8을 merge commit `bd6af8c`로 병합하고 로컬·원격 `main` 동기화
+- 2026-09-23: main push GitHub Actions 실행 `35804248463`의 `Quality`·`Docker Smoke` 성공
 - 2026-09-23: M5 정정 후 `pytest -q` 125개 테스트 통과, upstream TestClient deprecation warning 2건 확인
 - 2026-09-23: Ruff·포맷·`uv lock --check`·`git diff --check main...HEAD`·`docker compose config --quiet` 통과
 - 2026-09-23: Docker/Linux ARM64에서 실제 M3 checkpoint를 로드하고 UCI 첫 행의 API 추론 및 checkpoint SHA-256 불변 확인

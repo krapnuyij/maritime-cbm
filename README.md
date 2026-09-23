@@ -18,7 +18,8 @@
 ## 현재 상태
 
 M0 프로젝트 기반 구성부터 M5 FastAPI·Docker 서비스화까지 로컬 구현과 검증을 완료했다.
-M5 feature PR의 원격 CI와 review를 거쳐 `main` 반영 여부를 결정한다.
+PR #8을 merge commit으로 `main`에 반영했고, merge 후 `Quality`와 `Docker Smoke`도
+성공했다. 현재 단계는 지원서 제출을 위한 포트폴리오 최종 점검이다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -52,15 +53,16 @@ uv run --locked --group eda --group service pytest -q
 
 GitHub Actions는 Ubuntu에서 lock 파일, Ruff, 포맷과 pytest를 검증하는 `Quality` job과
 합성 checkpoint로 컨테이너 보안 설정·기동·5개 endpoint를 확인하는 `Docker Smoke` job을
-실행하도록 구성했다. M5 변경의 첫 원격 실행 결과는 아직 확인하지 않았다. 원본 UCI 파일과
-실제 checkpoint는 라이선스·대용량 artifact 재배포 방침 때문에 CI에서 내려받지 않는다.
+실행한다. PR #8과 merge commit `bd6af8c`의 main push에서 두 job이 모두 성공했다. 원본 UCI
+파일과 실제 checkpoint는 라이선스·대용량 artifact 재배포 방침 때문에 CI에서 내려받지
+않는다.
 
 원본에서 확인한 `kMc` 우선·`kMt` 차순의 9행 상태 그룹 블록 배치를 재현한 합성 격자로,
 문서화된 분할 해시 12개가 Ubuntu CI에서 재현됐다. 실제 분할 해시 검증은 합성 격자가
 원본과 같은 상태 그룹 블록 배치를 갖는다는 조건 아래에서만 대체한다. 원본 파일 로딩과
 EDA 관찰 수치는 원본이 있는 macOS와 Linux/aarch64 환경에서 별도로 검증했다. 현재 CI에서는
 원본 검증 3개, 배포 입력 범위 검증 1개와 실제 checkpoint API 검증 1개가 데이터·artifact
-부재로 skip될 예정이다. 합성 checkpoint smoke test는 서비스 동작 검증이며 모델 성능 결과가
+부재로 skip된다. 합성 checkpoint smoke test는 서비스 동작 검증이며 모델 성능 결과가
 아니다.
 
 EDA 그림까지 재생성하려면 전용 의존성 그룹을 추가로 설치한다.
