@@ -381,7 +381,12 @@ holdout에서는 고정 cutoff Recall만 보고하고 FPR은 `NA`로 기록했�
 - service: Uvicorn worker 1개, concurrency 1, 하나의 지속 HTTP/1.1 client로 순차 요청
 - protocol: warm-up 50회, cold start 5회, 단건 1,000회, 100건 batch 200회
 - Docker image: `sha256:c0405643bca6befec748bc3814eb1befbd57c9109923f6a864b73f80d8f82b7c`
-- image 크기: 354,694,718 byte, 338.263MiB
+- `docker image inspect .Size`: 354,694,718 byte, 338.263MiB
+- 후속 `docker system df -v`: virtual 1.7GB, shared 201.5MB, unique 1.503GB
+
+`docker system df -v`의 virtual size는 shared와 unique의 합이다. shared·unique 구분은 같은
+로컬 image store에 존재하는 다른 image 구성에 따라 달라질 수 있다. `docker image inspect`
+`Size` 필드의 의미를 압축 전송 크기로 단정하지 않고 명령과 필드 기준으로 기록한다.
 
 ### 결과
 

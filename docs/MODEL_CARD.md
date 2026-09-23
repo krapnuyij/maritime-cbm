@@ -302,7 +302,10 @@ Docker/Linux 결과와 직접 비교하지 않는다.
 
 idle process RSS는 352.652MiB, 요청 후 peak process RSS는 355.934MiB였다. 같은 시점의
 Docker cgroup 사용량은 242.9MiB이며, 계측 범위가 다른 값이므로 process RSS와 직접
-차감하거나 같은 지표처럼 비교하지 않는다. image 크기는 338.263MiB다.
+차감하거나 같은 지표처럼 비교하지 않는다. 동일 image ID에서 `docker image inspect .Size`는
+354,694,718 byte(338.263MiB), 후속 `docker system df -v` virtual size는 1.7GB였다.
+후자의 shared 201.5MB와 unique 1.503GB 구분은 로컬에 함께 존재하는 다른 image에 따라
+달라질 수 있다. inspect `Size` 필드의 의미를 압축 전송 크기로 단정하지 않는다.
 
 이 결과는 macOS ARM64 호스트 한 대의 Docker/Linux ARM64, concurrency 1 조건이다. 클라우드
 처리량, 높은 동시성, Linux/X64 성능이나 운영 SLA를 보장하지 않는다. 실제 고장진단 성능을

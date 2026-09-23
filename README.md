@@ -18,7 +18,7 @@
 ## 현재 상태
 
 M0 프로젝트 기반 구성부터 M5 FastAPI·Docker 서비스화까지 로컬 구현과 검증을 완료했다.
-M5 변경의 원격 CI와 PR 검증은 아직 수행하지 않았다.
+M5 feature PR의 원격 CI와 review를 거쳐 `main` 반영 여부를 결정한다.
 
 세부 범위와 진행 상황은 다음 문서에서 관리한다.
 
@@ -190,8 +190,9 @@ uv run --locked --group service python scripts/benchmark_service.py \
 
 로컬 Docker/Linux ARM64에서 요청 오류 없이 측정한 평균 지연시간은 cold start 1,452.024ms,
 단건 1.438ms, 100건 batch 3.901ms였다. idle process RSS는 352.652MiB, peak process RSS는
-355.934MiB였으며 image 크기는 338.263MiB였다. 단일 MacBook과 순차 요청 조건의 결과이므로
-클라우드 처리량이나 SLA로 일반화하지 않는다. 상세 조건과 산출물은
+355.934MiB였다. 같은 image ID에서 `docker image inspect .Size`는 354,694,718 byte
+(338.263MiB), `docker system df -v`의 virtual size는 1.7GB였다. 단일 MacBook과 순차 요청
+조건의 결과이므로 클라우드 처리량이나 SLA로 일반화하지 않는다. 상세 조건과 산출물은
 [서비스 리포트](reports/service/)에 있다.
 
 ## 데이터 준비와 검증

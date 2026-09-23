@@ -25,12 +25,19 @@
 - idle process RSS: 352.652MiB
 - process peak RSS: 355.934MiB
 - 요청 후 Docker cgroup 사용량: 242.9MiB
-- image 크기: 354,694,718 byte, 338.263MiB
+- `docker image inspect .Size`: 354,694,718 byte, 338.263MiB
+- 후속 `docker system df -v`: virtual 1.7GB, shared 201.5MB, unique 1.503GB
 - benchmark 전후 checkpoint SHA-256: 동일
 
 process RSS는 container 프로세스의 `/proc/1/status`, cgroup 사용량은 Docker stats에서
 측정했다. 계측 범위가 다르므로 두 값을 직접 차감하거나 같은 메모리 지표처럼 비교하지
 않는다.
+
+`docker system df -v`의 virtual size는 shared와 unique의 합이다. shared·unique 구분은 같은
+로컬 image store에 존재하는 다른 image에 따라 달라질 수 있다. `docker image inspect`
+`Size` 필드가 압축 전송 크기를 뜻한다고 단정하지 않고 실제 명령·필드와 측정값을 그대로
+기록한다. 계측 정의는 Docker의 [`system df` 문서](https://docs.docker.com/reference/cli/docker/system/df/)와
+[`containerd` image store 문서](https://docs.docker.com/engine/storage/containerd/)를 따른다.
 
 ## 재현
 

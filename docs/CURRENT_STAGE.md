@@ -47,7 +47,7 @@ M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 진행 중
 
-- `feat/m5-service`의 최종 문서화와 원격 PR 검증 준비
+- `feat/m5-service` PR의 원격 CI 검증과 review
 
 ## 진행 관리 원칙
 
@@ -59,10 +59,9 @@ M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 다음 작업
 
-1. `feat/m5-service` push와 PR 생성 여부 결정
-2. PR의 `Quality`·`Docker Smoke` GitHub Actions 결과 확인
-3. 리뷰 후 merge 여부 결정
-4. 지원서 제출 전 README·모델 카드와 공개 범위 최종 점검
+1. PR의 `Quality`·`Docker Smoke` GitHub Actions 결과 확인
+2. 리뷰 후 merge 여부 결정
+3. 지원서 제출 전 README·모델 카드와 공개 범위 최종 점검
 
 ## 확정된 결정
 
@@ -186,7 +185,8 @@ M5. 서비스화 — 로컬 구현·검증 완료
 - Docker는 UID/GID 10001의 non-root 사용자, read-only root filesystem·checkpoint mount, capability 제거와 `no-new-privileges`를 사용한다.
 - CI Docker smoke test의 합성 checkpoint는 기동·계약·endpoint·보안 동작 검증 전용이며 성능 결과로 사용하지 않는다.
 - Docker/Linux ARM64 고정 순차 요청에서 cold start 평균 1,452.024ms, 단건 평균 1.438ms, 100건 batch 평균 3.901ms를 측정했다.
-- 같은 측정의 idle process RSS는 352.652MiB, peak process RSS는 355.934MiB, Docker cgroup 사용량은 242.9MiB, image 크기는 338.263MiB다.
+- 같은 측정의 idle process RSS는 352.652MiB, peak process RSS는 355.934MiB, Docker cgroup 사용량은 242.9MiB다.
+- image ID `c0405643...`의 `docker image inspect .Size`는 354,694,718 byte(338.263MiB)이고, 후속 `docker system df -v` virtual size는 1.7GB다.
 - 원본 데이터는 Git에 커밋하지 않는다.
 - 기준 모델 결과를 확보한 뒤 PyTorch 비교 모델을 구현했다.
 - RAG와 프론트엔드는 MVP에서 제외한다.
@@ -197,12 +197,13 @@ M5. 서비스화 — 로컬 구현·검증 완료
 
 ## 마지막 검증
 
-- 2026-09-23: M5 문서화 후 `pytest -q` 124개 테스트 통과, upstream TestClient deprecation warning 2건 확인
-- 2026-09-23: Ruff·포맷·`uv lock --check`·`git diff --check`·`docker compose config --quiet` 통과
+- 2026-09-23: M5 정정 후 `pytest -q` 125개 테스트 통과, upstream TestClient deprecation warning 2건 확인
+- 2026-09-23: Ruff·포맷·`uv lock --check`·`git diff --check main...HEAD`·`docker compose config --quiet` 통과
 - 2026-09-23: Docker/Linux ARM64에서 실제 M3 checkpoint를 로드하고 UCI 첫 행의 API 추론 및 checkpoint SHA-256 불변 확인
 - 2026-09-23: 합성 checkpoint Docker smoke test로 non-root UID, read-only root filesystem·mount, 쓰기 거부와 5개 endpoint 확인
 - 2026-09-23: 고정 Docker/Linux benchmark에서 cold start 5회, 단건 1,000회, 100건 batch 200회 요청 오류 0건 확인
-- 2026-09-23: benchmark 기준 Debian 13·Linux/aarch64·Python 3.13.15·PyTorch 2.14.0+cpu, Docker image 338.263MiB 확인
+- 2026-09-23: benchmark 기준 Debian 13·Linux/aarch64·Python 3.13.15·PyTorch 2.14.0+cpu 확인
+- 2026-09-23: 동일 image ID에서 inspect `Size` 338.263MiB, `system df -v` virtual 1.7GB·shared 201.5MB·unique 1.503GB 확인
 
 - 2026-09-22: 기본 상태 그룹 train 기준 11개 연속 센서 범위를 전체 데이터와 네 시나리오 validation·test에 적용해 범위 이탈 0행 확인
 - 2026-09-22: macOS 예비 측정에서 M2/M3 peak RSS 591.9/294.2MB, 단건 평균 지연시간 5.572/0.164ms 확인
