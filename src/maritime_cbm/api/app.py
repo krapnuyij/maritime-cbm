@@ -2,10 +2,12 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from maritime_cbm.api.deployment import LoadedDeployment, load_deployment
 from maritime_cbm.api.schemas import (
@@ -31,6 +33,7 @@ VALIDATION_MESSAGE = "입력값이 API 계약을 만족하지 않는다."
 POLICY_INTERPRETATION = (
     "시뮬레이터 열화 계수 기반 PoC 정책이며 실제 고장진단 또는 공식 경보 기준이 아니다."
 )
+DEMO_STATIC_DIRECTORY = Path(__file__).with_name("static") / "demo"
 
 
 def _validation_response(details: list[dict[str, object]]) -> JSONResponse:
@@ -77,6 +80,11 @@ def create_app(
         title="Maritime CBM API",
         version="0.1.0",
         lifespan=lifespan,
+    )
+    application.mount(
+        "/demo",
+        StaticFiles(directory=DEMO_STATIC_DIRECTORY, html=True),
+        name="demo",
     )
 
     @application.exception_handler(RequestValidationError)

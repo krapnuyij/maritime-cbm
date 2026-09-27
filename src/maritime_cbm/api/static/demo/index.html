@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta
+      name="description"
+      content="Maritime CBM 시뮬레이션 기반 선박 가스터빈 열화 상태 추정 데모"
+    />
+    <title>Maritime CBM Demo</title>
+    <link rel="stylesheet" href="./demo.css" />
+    <script src="./demo.js" defer></script>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__content">
+        <p class="eyebrow">CONDITION-BASED MAINTENANCE · PoC</p>
+        <h1>Maritime CBM</h1>
+        <p class="hero__summary">
+          정상상태 선박 가스터빈 센서값으로 압축기·터빈 열화 상태 계수를 추정하고,
+          제한된 경보 정책을 적용한다.
+        </p>
+        <div class="contract" aria-label="배포 계약 정보">
+          <span id="service-status" class="status status--loading">계약 불러오는 중</span>
+          <span>Model <strong id="model-version">—</strong></span>
+          <span>Policy <strong id="policy-version">—</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel panel--input" aria-labelledby="input-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-index">01 · SENSOR INPUT</p>
+            <h2 id="input-title">운항·센서 입력</h2>
+          </div>
+          <button id="fill-example" class="button button--secondary" type="button" disabled>
+            실제 예제값 채우기
+          </button>
+        </div>
+
+        <form id="sensor-form">
+          <div id="sensor-fields" class="sensor-grid" aria-live="polite"></div>
+          <div id="form-error" class="message message--error" role="alert" hidden></div>
+          <button id="estimate-button" class="button button--primary" type="submit" disabled>
+            상태 추정 및 경보 평가
+          </button>
+        </form>
+      </section>
+
+      <section class="panel panel--result" aria-labelledby="result-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-index">02 · ESTIMATION</p>
+            <h2 id="result-title">추정 결과</h2>
+          </div>
+        </div>
+
+        <div id="empty-result" class="empty-result">
+          <span class="empty-result__mark" aria-hidden="true">↗</span>
+          <p>센서값을 입력하고 상태 추정을 실행하면 결과가 여기에 표시된다.</p>
+        </div>
+
+        <div id="result-content" hidden>
+          <div class="prediction-grid">
+            <article class="metric-card">
+              <span class="metric-card__label">압축기 계수</span>
+              <strong id="kmc-value" class="metric-card__value">—</strong>
+              <span class="metric-card__unit">kMc</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-card__label">터빈 계수</span>
+              <strong id="kmt-value" class="metric-card__value">—</strong>
+              <span class="metric-card__unit">kMt</span>
+            </article>
+          </div>
+
+          <div class="alert-summary">
+            <div>
+              <span class="alert-summary__label">종합 상태</span>
+              <strong id="overall-state" class="state-badge">—</strong>
+            </div>
+            <div class="severity-block">
+              <span>열화도</span>
+              <strong id="overall-severity">—</strong>
+            </div>
+          </div>
+
+          <div class="component-grid">
+            <div class="component-row">
+              <span>압축기</span>
+              <strong id="kmc-state">—</strong>
+              <span id="kmc-severity">—</span>
+            </div>
+            <div class="component-row">
+              <span>터빈</span>
+              <strong id="kmt-state">—</strong>
+              <span id="kmt-severity">—</span>
+            </div>
+          </div>
+
+          <p id="policy-criteria" class="criteria"></p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        이 화면은 타임스탬프와 실제 고장 라벨이 없는 시뮬레이션 데이터 기반 PoC이다.
+        결과를 실제 고장진단·미래 고장 예측·공식 경보 기준으로 해석하지 않는다.
+      </p>
+    </footer>
+  </body>
+</html>

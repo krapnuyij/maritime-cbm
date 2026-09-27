@@ -171,6 +171,7 @@ printf '%s  %s\n' \
 
 배포·제외 대상과 라이선스·신뢰 경계는 [Artifact 배포 정책](docs/ARTIFACTS.md)에 정리했다.
 
+- `GET /demo/`: 기존 상태 추정·경보 API를 호출하는 브라우저 데모(OpenAPI 계약에서는 제외)
 - `GET /health`: 서비스와 모델 준비 상태
 - `GET /model/info`: 배포 모델·입력·경보 정책 계약
 - `POST /v1/condition/predict`: 단건 `kMc`, `kMt` 추정
@@ -182,6 +183,11 @@ uv sync --locked --group service
 uv run --locked --group service uvicorn maritime_cbm.api.app:app \
   --host 127.0.0.1 --port 8000 --workers 1
 ```
+
+서버 실행 후 [브라우저 데모](http://127.0.0.1:8000/demo)를 열면 실제 UCI 첫 행 기반 예제
+입력을 자동으로 채우고 상태 추정과 경보 평가를 한 화면에서 실행할 수 있다. 데모는
+`/model/info`에서 현재 입력 범위와 모델·정책 버전을 읽고, 기존
+`/v1/condition/predict`와 `/v1/alert/evaluate`를 순서대로 호출한다.
 
 다른 터미널에서 상태 추정과 경보 정책을 호출한다.
 
