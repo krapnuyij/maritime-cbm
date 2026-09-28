@@ -33,6 +33,24 @@ PR #2와 merge commit `952ac13`로 반영한 뒤 main CI run `35875824288`을 �
 - [모델 카드](docs/MODEL_CARD.md)
 - [Artifact 배포 정책](docs/ARTIFACTS.md)
 
+## 브라우저 데모
+
+`main` 브랜치의 FastAPI 서비스는 실제 UCI 첫 행 기반 예제 입력으로 상태 계수를 추정하고
+PoC 경보 정책을 적용하는 `/demo/` 화면을 제공한다. 아래 결과는 실제 고장진단이나 미래 고장
+예측이 아니라 시뮬레이터 열화 계수 기반의 제한된 정책 결과다. 이미 발행된 `v0.1.0` tag에는
+브라우저 데모가 포함되지 않는다.
+
+![Maritime CBM 브라우저 데모 결과](docs/assets/demo/browser-demo-result.png)
+
+<details>
+<summary>모바일 결과 화면</summary>
+
+<p align="center">
+  <img src="docs/assets/demo/browser-demo-mobile.png" alt="Maritime CBM 모바일 브라우저 데모 결과" width="291">
+</p>
+
+</details>
+
 ## 개발 환경
 
 - Python 3.13
